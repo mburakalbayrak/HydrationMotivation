@@ -5,17 +5,18 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#00B4D8',
-        tabBarInactiveTintColor: '#5A7A9A',
+        tabBarActiveTintColor: '#38BDF8',
+        tabBarInactiveTintColor: '#475569',
         tabBarStyle: {
-          backgroundColor: '#020C1B',
-          borderTopColor: '#0A1929',
+          backgroundColor: '#0F172A',
+          borderTopColor: 'rgba(255,255,255,0.05)',
           borderTopWidth: 1,
-          height: 88,
-          paddingBottom: 28,
+          height: 84,
+          paddingBottom: 26,
           paddingTop: 8,
+          elevation: 0,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500', letterSpacing: 0.2 },
         headerShown: false,
       }}
     >
@@ -30,14 +31,14 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'İstatistik',
-          tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="collection"
         options={{
           title: 'Koleksiyon',
-          tabBarIcon: ({ color, size }) => <Ionicons name="trophy" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

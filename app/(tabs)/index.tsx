@@ -11,13 +11,7 @@ import {
   View,
 } from 'react-native';
 import CircularProgress from '@/components/CircularProgress';
-import {
-  BOTTLES,
-  DAILY_TASKS,
-  GLASS_SIZES,
-  getDailyQuote,
-  getLevel,
-} from '@/constants/waterData';
+import { DAILY_TASKS, GLASS_SIZES, getDailyQuote, getLevel } from '@/constants/waterData';
 
 export default function HomeScreen() {
   const [waterAmount, setWaterAmount] = useState(0);
@@ -25,7 +19,6 @@ export default function HomeScreen() {
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
   const [userName, setUserName] = useState('');
-  const [selectedBottle, setSelectedBottle] = useState(1);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [scaleAnim] = useState(new Animated.Value(1));
 
@@ -45,7 +38,6 @@ export default function HomeScreen() {
         setWaterAmount(0);
         setCompletedTasks([]);
 
-        // Streak check
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         if (savedDate === yesterday.toDateString()) {
@@ -72,18 +64,12 @@ export default function HomeScreen() {
 
       const goal = await AsyncStorage.getItem('dailyGoal');
       if (goal) setDailyGoal(parseInt(goal));
-
       const savedPoints = await AsyncStorage.getItem('points');
       if (savedPoints) setPoints(parseInt(savedPoints));
-
       const savedStreak = await AsyncStorage.getItem('streak');
       if (savedStreak) setStreak(parseInt(savedStreak));
-
-      const name = await AsyncStorage.getItem('userName');
-      if (name) setUserName(name);
-
-      const bottle = await AsyncStorage.getItem('selectedBottle');
-      if (bottle) setSelectedBottle(parseInt(bottle));
+      const savedName = await AsyncStorage.getItem('userName');
+      if (savedName) setUserName(savedName);
     } catch {
       /* ignore */
     }
@@ -91,7 +77,7 @@ export default function HomeScreen() {
 
   const animatePulse = useCallback(() => {
     Animated.sequence([
-      Animated.spring(scaleAnim, { toValue: 1.15, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1.08, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }),
     ]).start();
   }, [scaleAnim]);
@@ -107,133 +93,131 @@ export default function HomeScreen() {
       const newPoints = points + 100;
       setPoints(newPoints);
       await AsyncStorage.setItem('points', newPoints.toString());
-      Alert.alert('🎉 Tebrikler!', 'Günlük hedefini tamamladın! +100 puan kazandın!');
+      Alert.alert('Tebrikler!', 'Günlük hedefini tamamladın! +100 puan kazandın.');
     }
   };
 
-  const percentage = Math.round((waterAmount / dailyGoal) * 100);
-  const progress = waterAmount / dailyGoal;
-  const bottle = BOTTLES.find((b) => b.id === selectedBottle);
+  const progress = Math.min(waterAmount / dailyGoal, 1);
+  const percentage = Math.round(progress * 100);
   const level = getLevel(points);
   const quote = getDailyQuote();
+  const remaining = Math.max(dailyGoal - waterAmount, 0);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Günaydın';
-    if (hour < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (hour < 18) return 'İyi Günler';
+    return 'İyi Akşamlar';
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* ─── Header ──────────────────────────────── */}
+      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>{getGreeting()} 👋</Text>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.userName}>{userName || 'Kullanıcı'}</Text>
         </View>
-        <View style={styles.headerRight}>
+        <View style={styles.headerBadges}>
           {streak > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakText}>🔥 {streak}</Text>
+              <Ionicons name="flame" size={14} color="#FB923C" />
+              <Text style={styles.streakText}>{streak}</Text>
             </View>
           )}
           <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>{level.emoji} {level.name}</Text>
+            <Text style={styles.levelText}>Lv.{level.level}</Text>
           </View>
         </View>
       </View>
 
-      {/* ─── Circular Progress ───────────────────── */}
+      {/* Main Progress */}
       <View style={styles.progressSection}>
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <CircularProgress
-            size={240}
-            strokeWidth={16}
-            progress={progress}
-            color={progress >= 1 ? '#10B981' : '#00B4D8'}
-            bgColor="#0A1929"
-          >
-            <Text style={styles.bottleEmoji}>{bottle?.emoji || '🧴'}</Text>
-            <Text style={styles.percentText}>{Math.min(percentage, 100)}%</Text>
-            <Text style={styles.amountSmall}>
-              {waterAmount} / {dailyGoal} ml
-            </Text>
+          <CircularProgress size={220} strokeWidth={14} progress={progress}>
+            <Text style={styles.percentText}>{percentage}%</Text>
+            <Text style={styles.amountText}>{waterAmount} ml</Text>
+            <Text style={styles.goalText}>/ {dailyGoal} ml</Text>
           </CircularProgress>
         </Animated.View>
       </View>
 
-      {/* ─── Status Text ─────────────────────────── */}
+      {/* Status */}
       <Text style={styles.statusText}>
         {waterAmount >= dailyGoal
-          ? '✅ Hedef tamamlandı! Harikasın!'
-          : `💧 ${dailyGoal - waterAmount} ml daha içmen gerekiyor`}
+          ? 'Hedef tamamlandı!'
+          : `${remaining} ml daha`}
       </Text>
 
-      {/* ─── Glass Size Buttons ──────────────────── */}
-      <View style={styles.glassSection}>
-        <Text style={styles.sectionTitle}>Su Ekle</Text>
-        <View style={styles.glassGrid}>
+      {/* Quick Add */}
+      <View style={styles.addSection}>
+        <Text style={styles.sectionLabel}>Su Ekle (ml)</Text>
+        <View style={styles.glassRow}>
           {GLASS_SIZES.map((glass) => (
             <TouchableOpacity
               key={glass.amount}
               style={styles.glassButton}
               onPress={() => addWater(glass.amount)}
-              activeOpacity={0.7}
+              activeOpacity={0.6}
             >
-              <Text style={styles.glassEmoji}>{glass.emoji}</Text>
-              <Text style={styles.glassLabel}>{glass.label}</Text>
+              <Text style={styles.glassAmount}>+{glass.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      {/* ─── Points & Level ──────────────────────── */}
-      <View style={styles.pointsCard}>
-        <View style={styles.pointsRow}>
-          <View style={styles.pointsInfo}>
-            <Text style={styles.pointsLabel}>Toplam Puan</Text>
-            <Text style={styles.pointsValue}>⭐ {points}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.pointsInfo}>
-            <Text style={styles.pointsLabel}>Seviye</Text>
-            <Text style={styles.pointsValue}>{level.emoji} {level.level}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.pointsInfo}>
-            <Text style={styles.pointsLabel}>Seri</Text>
-            <Text style={styles.pointsValue}>🔥 {streak} gün</Text>
-          </View>
+      {/* Stats Row */}
+      <View style={styles.statsCard}>
+        <View style={styles.statItem}>
+          <Ionicons name="star" size={18} color="#FBBF24" />
+          <Text style={styles.statValue}>{points}</Text>
+          <Text style={styles.statLabel}>Puan</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Ionicons name="trophy" size={18} color="#A78BFA" />
+          <Text style={styles.statValue}>{level.name}</Text>
+          <Text style={styles.statLabel}>Seviye</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Ionicons name="flame" size={18} color="#FB923C" />
+          <Text style={styles.statValue}>{streak}</Text>
+          <Text style={styles.statLabel}>Seri</Text>
         </View>
       </View>
 
-      {/* ─── Daily Tasks ─────────────────────────── */}
+      {/* Daily Tasks */}
       <View style={styles.tasksSection}>
-        <Text style={styles.sectionTitle}>Günlük Görevler</Text>
+        <Text style={styles.sectionLabel}>Günlük Görevler</Text>
         {DAILY_TASKS.slice(0, 3).map((task) => {
           const done = completedTasks.includes(task.id);
           return (
-            <View key={task.id} style={[styles.taskCard, done && styles.taskDone]}>
-              <Text style={styles.taskEmoji}>{task.emoji}</Text>
+            <View key={task.id} style={[styles.taskRow, done && styles.taskRowDone]}>
+              <View style={[styles.taskIcon, done && styles.taskIconDone]}>
+                <Ionicons
+                  name={done ? 'checkmark' : (task.icon as keyof typeof Ionicons.glyphMap)}
+                  size={16}
+                  color={done ? '#fff' : '#64748B'}
+                />
+              </View>
               <View style={styles.taskInfo}>
                 <Text style={[styles.taskName, done && styles.taskNameDone]}>{task.name}</Text>
                 <Text style={styles.taskDesc}>{task.description}</Text>
               </View>
-              <View style={[styles.taskReward, done && styles.taskRewardDone]}>
-                <Text style={styles.taskRewardText}>+{task.reward}</Text>
-              </View>
+              <Text style={[styles.taskReward, done && styles.taskRewardDone]}>+{task.reward}</Text>
             </View>
           );
         })}
       </View>
 
-      {/* ─── Motivation Quote ────────────────────── */}
+      {/* Quote */}
       <View style={styles.quoteCard}>
+        <Ionicons name="chatbubble-outline" size={16} color="#475569" />
         <Text style={styles.quoteText}>{quote}</Text>
       </View>
 
-      {/* ─── Reset ───────────────────────────────── */}
+      {/* Reset */}
       <TouchableOpacity
         style={styles.resetButton}
         onPress={async () => {
@@ -241,78 +225,94 @@ export default function HomeScreen() {
           await AsyncStorage.setItem('water', '0');
         }}
       >
-        <Ionicons name="refresh" size={16} color="#5A7A9A" />
+        <Ionicons name="refresh-outline" size={15} color="#475569" />
         <Text style={styles.resetText}>Bugünü Sıfırla</Text>
       </TouchableOpacity>
 
-      <View style={{ height: 30 }} />
+      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#03045E' },
+  container: { flex: 1, backgroundColor: '#0F172A' },
   content: { padding: 20, paddingTop: 60 },
 
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  greeting: { color: '#5A7A9A', fontSize: 14 },
-  userName: { color: '#fff', fontSize: 24, fontWeight: 'bold', marginTop: 2 },
-  headerRight: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  streakBadge: { backgroundColor: '#1A0A00', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#FF6B00' },
-  streakText: { color: '#FF6B00', fontSize: 13, fontWeight: 'bold' },
-  levelBadge: { backgroundColor: '#0A1929', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#0077B6' },
-  levelText: { color: '#00B4D8', fontSize: 13, fontWeight: '600' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+  greeting: { color: '#475569', fontSize: 14, fontWeight: '500' },
+  userName: { color: '#F1F5F9', fontSize: 22, fontWeight: '700', marginTop: 2, letterSpacing: -0.5 },
+  headerBadges: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  streakBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(251,146,60,0.12)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+  },
+  streakText: { color: '#FB923C', fontSize: 13, fontWeight: '700' },
+  levelBadge: {
+    backgroundColor: 'rgba(56,189,248,0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+  },
+  levelText: { color: '#38BDF8', fontSize: 13, fontWeight: '700' },
 
   // Progress
-  progressSection: { alignItems: 'center', marginVertical: 16 },
-  bottleEmoji: { fontSize: 40, marginBottom: 4 },
-  percentText: { color: '#fff', fontSize: 36, fontWeight: 'bold' },
-  amountSmall: { color: '#5A7A9A', fontSize: 13, marginTop: 2 },
-  statusText: { color: '#90E0EF', fontSize: 15, textAlign: 'center', marginBottom: 24 },
+  progressSection: { alignItems: 'center', marginVertical: 24 },
+  percentText: { color: '#F1F5F9', fontSize: 42, fontWeight: '800', letterSpacing: -2 },
+  amountText: { color: '#94A3B8', fontSize: 15, fontWeight: '600', marginTop: 2 },
+  goalText: { color: '#475569', fontSize: 13, marginTop: 1 },
+
+  // Status
+  statusText: { color: '#64748B', fontSize: 14, textAlign: 'center', marginBottom: 24, fontWeight: '500' },
 
   // Glass buttons
-  glassSection: { marginBottom: 20 },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 14 },
-  glassGrid: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  addSection: { marginBottom: 20 },
+  sectionLabel: { color: '#94A3B8', fontSize: 13, fontWeight: '600', marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
+  glassRow: { flexDirection: 'row', gap: 8 },
   glassButton: {
-    flex: 1, minWidth: 60, backgroundColor: '#0A1929', borderRadius: 16,
-    paddingVertical: 14, alignItems: 'center', gap: 6,
-    borderWidth: 1, borderColor: '#0D2137',
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12,
+    paddingVertical: 14, alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
   },
-  glassEmoji: { fontSize: 24 },
-  glassLabel: { color: '#90E0EF', fontSize: 12, fontWeight: '600' },
+  glassAmount: { color: '#38BDF8', fontSize: 14, fontWeight: '700' },
 
-  // Points
-  pointsCard: { backgroundColor: '#0A1929', borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#0D2137' },
-  pointsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  pointsInfo: { alignItems: 'center' },
-  pointsLabel: { color: '#5A7A9A', fontSize: 12, marginBottom: 6 },
-  pointsValue: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  divider: { width: 1, height: 36, backgroundColor: '#0D2137' },
+  // Stats
+  statsCard: {
+    flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16,
+    padding: 18, marginBottom: 24, alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+  },
+  statItem: { flex: 1, alignItems: 'center', gap: 4 },
+  statValue: { color: '#F1F5F9', fontSize: 15, fontWeight: '700' },
+  statLabel: { color: '#475569', fontSize: 11, fontWeight: '500' },
+  statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.06)' },
 
   // Tasks
   tasksSection: { marginBottom: 20 },
-  taskCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A1929',
-    borderRadius: 16, padding: 16, gap: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: '#0D2137',
+  taskRow: {
+    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, marginBottom: 8,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
   },
-  taskDone: { borderColor: '#10B981', opacity: 0.7 },
-  taskEmoji: { fontSize: 28 },
+  taskRowDone: { opacity: 0.5 },
+  taskIcon: {
+    width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  taskIconDone: { backgroundColor: '#34D399' },
   taskInfo: { flex: 1 },
-  taskName: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  taskNameDone: { textDecorationLine: 'line-through', color: '#5A7A9A' },
-  taskDesc: { color: '#5A7A9A', fontSize: 12, marginTop: 2 },
-  taskReward: { backgroundColor: '#0D2137', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
-  taskRewardDone: { backgroundColor: '#10B981' },
-  taskRewardText: { color: '#FFD700', fontSize: 12, fontWeight: 'bold' },
+  taskName: { color: '#E2E8F0', fontSize: 14, fontWeight: '600' },
+  taskNameDone: { textDecorationLine: 'line-through', color: '#64748B' },
+  taskDesc: { color: '#475569', fontSize: 12, marginTop: 1 },
+  taskReward: { color: '#FBBF24', fontSize: 13, fontWeight: '700' },
+  taskRewardDone: { color: '#475569' },
 
   // Quote
-  quoteCard: { backgroundColor: '#0A1929', borderRadius: 16, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#0D2137' },
-  quoteText: { color: '#90E0EF', fontSize: 15, textAlign: 'center', fontStyle: 'italic', lineHeight: 22 },
+  quoteCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+  },
+  quoteText: { color: '#64748B', fontSize: 14, fontStyle: 'italic', lineHeight: 20, flex: 1 },
 
   // Reset
-  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 14 },
-  resetText: { color: '#5A7A9A', fontSize: 14 },
+  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12 },
+  resetText: { color: '#475569', fontSize: 13, fontWeight: '500' },
 });

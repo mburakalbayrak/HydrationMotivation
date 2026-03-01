@@ -1,13 +1,11 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 interface CircularProgressProps {
   size: number;
   strokeWidth: number;
   progress: number;
-  color?: string;
-  bgColor?: string;
   children?: React.ReactNode;
 }
 
@@ -15,8 +13,6 @@ export default function CircularProgress({
   size,
   strokeWidth,
   progress,
-  color = '#00B4D8',
-  bgColor = '#023E8A',
   children,
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2;
@@ -27,11 +23,17 @@ export default function CircularProgress({
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Defs>
+          <LinearGradient id="progressGrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#38BDF8" />
+            <Stop offset="1" stopColor="#818CF8" />
+          </LinearGradient>
+        </Defs>
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={bgColor}
+          stroke="rgba(255,255,255,0.06)"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -39,7 +41,7 @@ export default function CircularProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={color}
+          stroke={clampedProgress >= 1 ? '#34D399' : 'url(#progressGrad)'}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={`${circumference}`}

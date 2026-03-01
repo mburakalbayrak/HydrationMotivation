@@ -17,13 +17,26 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inOnboarding = segments[0] === 'onboarding';
+    const checkAndNavigate = async () => {
+      // Her segment değişiminde AsyncStorage'dan tekrar kontrol et
+      const onboarded = await AsyncStorage.getItem('onboarded');
+      const currentlyOnboarded = onboarded === 'true';
 
-    if (!isOnboarded && !inOnboarding) {
-      router.replace('/onboarding');
-    } else if (isOnboarded && inOnboarding) {
-      router.replace('/(tabs)');
-    }
+      if (currentlyOnboarded !== isOnboarded) {
+        setIsOnboarded(currentlyOnboarded);
+        return;
+      }
+
+      const inOnboarding = segments[0] === 'onboarding';
+
+      if (!isOnboarded && !inOnboarding) {
+        router.replace('/onboarding');
+      } else if (isOnboarded && inOnboarding) {
+        router.replace('/(tabs)');
+      }
+    };
+
+    checkAndNavigate();
   }, [isOnboarded, isLoading, segments, router]);
 
   const checkOnboarding = async () => {

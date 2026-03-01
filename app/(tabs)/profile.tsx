@@ -1,195 +1,160 @@
-import { BADGES, LEVELS, getLevel } from '@/constants/waterData';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import { BADGES, getLevel } from '../../constants/waterData';
 
 export default function ProfileScreen() {
-  const [name, setName] = useState('');
-  const [weight, setWeight] = useState('70');
-  const [height, setHeight] = useState('170');
-  const [gender, setGender] = useState('male');
-  const [activityLevel, setActivityLevel] = useState('moderate');
+  const [userName, setUserName] = useState('');
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [activity, setActivity] = useState('');
   const [dailyGoal, setDailyGoal] = useState(2500);
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [totalDays, setTotalDays] = useState(0);
 
-  // Notification Settings (UI Only)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [reminderInterval, setReminderInterval] = useState(60); // minutes
-  const [quietHoursEnabled, setQuietHoursEnabled] = useState(true);
-  const [quietStart] = useState('23:00');
-  const [quietEnd] = useState('07:00');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notificationsOn, setNotificationsOn] = useState(true);
+  const [interval, setInterval] = useState(60);
+
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editWeight, setEditWeight] = useState('');
+  const [editHeight, setEditHeight] = useState('');
 
   useEffect(() => {
-    loadProfile();
+    loadData();
   }, []);
 
-  const loadProfile = async () => {
+  const loadData = async () => {
     try {
       const n = await AsyncStorage.getItem('userName');
-      if (n) setName(n);
-
+      if (n) { setUserName(n); setEditName(n); }
       const w = await AsyncStorage.getItem('weight');
-      if (w) setWeight(w);
-
+      if (w) { setWeight(w); setEditWeight(w); }
       const h = await AsyncStorage.getItem('height');
-      if (h) setHeight(h);
-
-      const g = await AsyncStorage.getItem('gender');
-      if (g) setGender(g);
-
-      const a = await AsyncStorage.getItem('activityLevel');
-      if (a) setActivityLevel(a);
-
-      const dg = await AsyncStorage.getItem('dailyGoal');
-      if (dg) setDailyGoal(parseInt(dg));
-
+      if (h) { setHeight(h); setEditHeight(h); }
+      const a = await AsyncStorage.getItem('activity');
+      if (a) setActivity(a);
+      const g = await AsyncStorage.getItem('dailyGoal');
+      if (g) setDailyGoal(parseInt(g));
       const p = await AsyncStorage.getItem('points');
       if (p) setPoints(parseInt(p));
-
       const s = await AsyncStorage.getItem('streak');
       if (s) setStreak(parseInt(s));
-
-      const eb = await AsyncStorage.getItem('earnedBadges');
-      if (eb) setEarnedBadges(JSON.parse(eb));
+      const td = await AsyncStorage.getItem('totalDays');
+      if (td) setTotalDays(parseInt(td));
     } catch {
       /* ignore */
     }
   };
 
-  const handleSaveProfile = async () => {
+  const saveProfile = async () => {
     try {
-      await AsyncStorage.setItem('userName', name);
-      await AsyncStorage.setItem('weight', weight);
-      await AsyncStorage.setItem('height', height);
-      await AsyncStorage.setItem('gender', gender);
-      await AsyncStorage.setItem('activityLevel', activityLevel);
-      setIsEditing(false);
-      Alert.alert('✅ Kaydedildi', 'Profil bilgilerin güncellendi!');
+      if (editName) { await AsyncStorage.setItem('userName', editName); setUserName(editName); }
+      if (editWeight) { await AsyncStorage.setItem('weight', editWeight); setWeight(editWeight); }
+      if (editHeight) { await AsyncStorage.setItem('height', editHeight); setHeight(editHeight); }
+      setEditMode(false);
     } catch {
       /* ignore */
     }
   };
 
-  const handleResetOnboarding = () => {
+  const resetData = () => {
     Alert.alert(
-      '⚠️ Emin misin?',
-      'Tüm veriler silinecek ve baştan başlayacaksın.',
+      'Verileri Sıfırla',
+      'Tüm ilerleme ve veriler silinecek. Emin misin?',
       [
         { text: 'İptal', style: 'cancel' },
         {
           text: 'Sıfırla',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.clear();
-            Alert.alert('🔄 Sıfırlandı', 'Uygulama yeniden başlatılacak.');
+            const keysToRemove = [
+              'waterToday', 'weeklyData', 'streak', 'totalDays', 'bestDay',
+              'points', 'lastDrinkDate', 'completedTasks',
+            ];
+            await AsyncStorage.multiRemove(keysToRemove);
+            setPoints(0); setStreak(0); setTotalDays(0);
           },
         },
-      ]
+      ],
     );
   };
 
   const level = getLevel(points);
-  const nextLevel = LEVELS.find((l) => l.level === level.level + 1);
-  const levelProgress = nextLevel
-    ? (points - level.minPoints) / (nextLevel.minPoints - level.minPoints)
-    : 1;
-
-  const intervals = [
-    { value: 30, label: '30dk' },
-    { value: 60, label: '1sa' },
-    { value: 90, label: '1.5sa' },
-    { value: 120, label: '2sa' },
-  ];
+  const unlockedBadges = BADGES.filter((b) => {
+    if (b.condition === 'streak3') return streak >= 3;
+    if (b.condition === 'streak7') return streak >= 7;
+    if (b.condition === 'streak30') return streak >= 30;
+    if (b.condition === 'days7') return totalDays >= 7;
+    if (b.condition === 'days30') return totalDays >= 30;
+    if (b.condition === 'points500') return points >= 500;
+    if (b.condition === 'points2000') return points >= 2000;
+    return false;
+  });
 
   const activityLabels: Record<string, string> = {
-    sedentary: 'Hareketsiz',
-    light: 'Hafif',
-    moderate: 'Orta',
-    active: 'Aktif',
-    very_active: 'Çok Aktif',
+    sedentary: 'Hareketsiz', light: 'Hafif', moderate: 'Orta', active: 'Aktif',
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>👤 Profil</Text>
+      <Text style={styles.title}>Profil</Text>
 
-      {/* ─── Profile Card ────────────────────────── */}
-      <View style={styles.profileCard}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatar}>{gender === 'female' ? '👩' : '👨'}</Text>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelBadgeText}>{level.emoji}</Text>
-          </View>
+      {/* Avatar & Level */}
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarCircle}>
+          <Ionicons name="person" size={32} color="#38BDF8" />
         </View>
-
-        <Text style={styles.userName}>{name || 'Su İçici'}</Text>
-        <Text style={styles.userLevel}>{level.emoji} {level.name} • Seviye {level.level}</Text>
-
-        {/* Level Progress */}
-        <View style={styles.levelProgressContainer}>
-          <View style={styles.levelProgressBar}>
-            <View style={[styles.levelProgressFill, { width: `${Math.min(levelProgress * 100, 100)}%` }]} />
-          </View>
-          <Text style={styles.levelProgressText}>
-            {nextLevel
-              ? `${points} / ${nextLevel.minPoints} puan`
-              : 'Maksimum seviye! 👑'}
-          </Text>
-        </View>
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.profileStat}>
-            <Text style={styles.profileStatValue}>⭐ {points}</Text>
-            <Text style={styles.profileStatLabel}>Puan</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.profileStat}>
-            <Text style={styles.profileStatValue}>🔥 {streak}</Text>
-            <Text style={styles.profileStatLabel}>Seri</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.profileStat}>
-            <Text style={styles.profileStatValue}>💧 {dailyGoal}ml</Text>
-            <Text style={styles.profileStatLabel}>Hedef</Text>
-          </View>
+        <Text style={styles.avatarName}>{userName || 'Kullanıcı'}</Text>
+        <View style={styles.levelBadge}>
+          <Ionicons name="star" size={12} color="#FBBF24" />
+          <Text style={styles.levelText}>{level.name}</Text>
         </View>
       </View>
 
-      {/* ─── Badges Section ──────────────────────── */}
+      {/* Quick Stats */}
+      <View style={styles.statsRow}>
+        {[
+          { label: 'Puan', value: `${points}`, icon: 'diamond' as const, color: '#FBBF24' },
+          { label: 'Seri', value: `${streak}`, icon: 'flame' as const, color: '#FB923C' },
+          { label: 'Gün', value: `${totalDays}`, icon: 'calendar' as const, color: '#A78BFA' },
+        ].map((s) => (
+          <View key={s.label} style={styles.statItem}>
+            <Ionicons name={s.icon} size={16} color={s.color} />
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Badges */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>🏅 Rozetler</Text>
-          <Text style={styles.sectionCount}>
-            {earnedBadges.length}/{BADGES.length}
-          </Text>
+          <Text style={styles.sectionLabel}>Rozetler</Text>
+          <Text style={styles.sectionCount}>{unlockedBadges.length}/{BADGES.length}</Text>
         </View>
-
         <View style={styles.badgeGrid}>
           {BADGES.map((badge) => {
-            const isEarned = earnedBadges.includes(badge.id);
+            const earned = unlockedBadges.some((b) => b.id === badge.id);
             return (
-              <View
-                key={badge.id}
-                style={[styles.badgeItem, isEarned && styles.badgeItemEarned]}
-              >
-                <Text style={[styles.badgeEmoji, !isEarned && styles.badgeEmojiLocked]}>
-                  {isEarned ? badge.emoji : '🔒'}
-                </Text>
-                <Text style={[styles.badgeName, !isEarned && styles.badgeNameLocked]} numberOfLines={1}>
+              <View key={badge.id} style={[styles.badgeItem, earned && styles.badgeEarned]}>
+                <Ionicons
+                  name={badge.icon as keyof typeof Ionicons.glyphMap}
+                  size={20}
+                  color={earned ? '#FBBF24' : '#334155'}
+                />
+                <Text style={[styles.badgeName, !earned && styles.badgeNameLocked]} numberOfLines={1}>
                   {badge.name}
                 </Text>
               </View>
@@ -198,310 +163,213 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* ─── Personal Info ───────────────────────── */}
+      {/* Personal Info */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>📝 Kişisel Bilgiler</Text>
-          <TouchableOpacity onPress={() => (isEditing ? handleSaveProfile() : setIsEditing(true))}>
-            <Text style={styles.editButton}>{isEditing ? '✅ Kaydet' : '✏️ Düzenle'}</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionLabel}>Kişisel Bilgiler</Text>
+          <Pressable onPress={() => editMode ? saveProfile() : setEditMode(true)}>
+            <Text style={styles.editBtn}>{editMode ? 'Kaydet' : 'Düzenle'}</Text>
+          </Pressable>
         </View>
-
         <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>👤 İsim</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.infoInput}
-                value={name}
-                onChangeText={setName}
-                placeholder="İsmin"
-                placeholderTextColor="#3A5A7A"
-              />
-            ) : (
-              <Text style={styles.infoValue}>{name || '-'}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoDivider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>⚖️ Kilo</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.infoInput}
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-                placeholder="70"
-                placeholderTextColor="#3A5A7A"
-              />
-            ) : (
-              <Text style={styles.infoValue}>{weight} kg</Text>
-            )}
-          </View>
-
-          <View style={styles.infoDivider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>📏 Boy</Text>
-            {isEditing ? (
-              <TextInput
-                style={styles.infoInput}
-                value={height}
-                onChangeText={setHeight}
-                keyboardType="numeric"
-                placeholder="170"
-                placeholderTextColor="#3A5A7A"
-              />
-            ) : (
-              <Text style={styles.infoValue}>{height} cm</Text>
-            )}
-          </View>
-
-          <View style={styles.infoDivider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{gender === 'female' ? '♀️' : '♂️'} Cinsiyet</Text>
-            <Text style={styles.infoValue}>{gender === 'female' ? 'Kadın' : 'Erkek'}</Text>
-          </View>
-
-          <View style={styles.infoDivider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>🏃 Aktivite</Text>
-            <Text style={styles.infoValue}>{activityLabels[activityLevel] || activityLevel}</Text>
-          </View>
+          {editMode ? (
+            <View style={styles.editGroup}>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>İsim</Text>
+                <TextInput
+                  style={styles.editInput} value={editName}
+                  onChangeText={setEditName} placeholder="İsim" placeholderTextColor="#475569"
+                />
+              </View>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Kilo (kg)</Text>
+                <TextInput
+                  style={styles.editInput} value={editWeight}
+                  onChangeText={setEditWeight} keyboardType="numeric" placeholder="70" placeholderTextColor="#475569"
+                />
+              </View>
+              <View style={styles.editRow}>
+                <Text style={styles.editLabel}>Boy (cm)</Text>
+                <TextInput
+                  style={styles.editInput} value={editHeight}
+                  onChangeText={setEditHeight} keyboardType="numeric" placeholder="170" placeholderTextColor="#475569"
+                />
+              </View>
+            </View>
+          ) : (
+            <>
+              <InfoRow icon="person-outline" label="İsim" value={userName || '—'} />
+              <InfoRow icon="fitness-outline" label="Kilo" value={weight ? `${weight} kg` : '—'} />
+              <InfoRow icon="resize-outline" label="Boy" value={height ? `${height} cm` : '—'} />
+              <InfoRow icon="walk-outline" label="Aktivite" value={activityLabels[activity] || '—'} />
+              <InfoRow icon="water-outline" label="Hedef" value={`${dailyGoal} ml`} last />
+            </>
+          )}
         </View>
       </View>
 
-      {/* ─── Notification Settings ───────────────── */}
+      {/* Notifications */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔔 Bildirim Ayarları</Text>
-
-        <View style={styles.settingsCard}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Hatırlatmalar</Text>
-              <Text style={styles.settingDesc}>Su içme hatırlatmaları</Text>
+        <Text style={styles.sectionLabel}>Bildirimler</Text>
+        <View style={styles.infoCard}>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLeft}>
+              <Ionicons name="notifications-outline" size={18} color="#38BDF8" />
+              <Text style={styles.switchLabel}>Hatırlatmalar</Text>
             </View>
             <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: '#0D2137', true: '#023E8A' }}
-              thumbColor={notificationsEnabled ? '#00B4D8' : '#5A7A9A'}
+              value={notificationsOn}
+              onValueChange={setNotificationsOn}
+              trackColor={{ false: '#1E293B', true: 'rgba(56,189,248,0.3)' }}
+              thumbColor={notificationsOn ? '#38BDF8' : '#475569'}
             />
           </View>
-
-          {notificationsEnabled && (
+          {notificationsOn && (
             <>
-              <View style={styles.settingDivider} />
-
-              {/* Interval selector */}
-              <View style={styles.settingSection}>
-                <Text style={styles.settingLabel}>⏰ Hatırlatma Aralığı</Text>
-                <View style={styles.intervalRow}>
-                  {intervals.map((item) => (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={[
-                        styles.intervalButton,
-                        reminderInterval === item.value && styles.intervalButtonActive,
-                      ]}
-                      onPress={() => setReminderInterval(item.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.intervalText,
-                          reminderInterval === item.value && styles.intervalTextActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.settingDivider} />
-
-              {/* Quiet Hours */}
-              <View style={styles.settingRow}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingLabel}>🌙 Sessiz Saatler</Text>
-                  <Text style={styles.settingDesc}>{quietStart} - {quietEnd}</Text>
-                </View>
-                <Switch
-                  value={quietHoursEnabled}
-                  onValueChange={setQuietHoursEnabled}
-                  trackColor={{ false: '#0D2137', true: '#023E8A' }}
-                  thumbColor={quietHoursEnabled ? '#00B4D8' : '#5A7A9A'}
-                />
-              </View>
-
-              <View style={styles.settingDivider} />
-
-              {/* Sound */}
-              <View style={styles.settingRow}>
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingLabel}>🔊 Ses</Text>
-                  <Text style={styles.settingDesc}>Bildirim sesi</Text>
-                </View>
-                <Switch
-                  value={soundEnabled}
-                  onValueChange={setSoundEnabled}
-                  trackColor={{ false: '#0D2137', true: '#023E8A' }}
-                  thumbColor={soundEnabled ? '#00B4D8' : '#5A7A9A'}
-                />
+              <View style={styles.divider} />
+              <Text style={styles.intervalLabel}>Hatırlatma Sıklığı</Text>
+              <View style={styles.intervalRow}>
+                {[30, 60, 90, 120].map((min) => (
+                  <Pressable
+                    key={min}
+                    style={[styles.intervalBtn, interval === min && styles.intervalBtnActive]}
+                    onPress={() => setInterval(min)}
+                  >
+                    <Text style={[styles.intervalText, interval === min && styles.intervalTextActive]}>
+                      {min} dk
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             </>
           )}
         </View>
       </View>
 
-      {/* ─── App Settings ────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚙️ Uygulama</Text>
-        <View style={styles.settingsCard}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('📤 Yakında', 'Veri dışa aktarma özelliği yakında eklenecek.')}>
-            <Text style={styles.menuEmoji}>📤</Text>
-            <Text style={styles.menuText}>Verileri Dışa Aktar</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
+      {/* Reset */}
+      <Pressable style={styles.resetBtn} onPress={resetData}>
+        <Ionicons name="trash-outline" size={16} color="#F87171" />
+        <Text style={styles.resetText}>Verileri Sıfırla</Text>
+      </Pressable>
 
-          <View style={styles.settingDivider} />
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('☁️ Yakında', 'Bulut senkronizasyon özelliği yakında eklenecek.')}>
-            <Text style={styles.menuEmoji}>☁️</Text>
-            <Text style={styles.menuText}>Bulut Senkronizasyon</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-
-          <View style={styles.settingDivider} />
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('ℹ️ HydrationMotivation', 'Versiyon 1.0.0\n\nSu içme hatırlatıcı ve motivasyon uygulaması.\n\n💧 Sağlıklı kal!')}>
-            <Text style={styles.menuEmoji}>ℹ️</Text>
-            <Text style={styles.menuText}>Hakkında</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-
-          <View style={styles.settingDivider} />
-
-          <TouchableOpacity style={[styles.menuItem]} onPress={handleResetOnboarding}>
-            <Text style={styles.menuEmoji}>🗑️</Text>
-            <Text style={[styles.menuText, { color: '#EF4444' }]}>Verileri Sıfırla</Text>
-            <Text style={[styles.menuArrow, { color: '#EF4444' }]}>›</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <Text style={styles.version}>HydrationMotivation v1.0.0 💧</Text>
-
-      <View style={{ height: 30 }} />
+      <Text style={styles.versionText}>HydrationMotivation v1.0</Text>
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 }
 
+function InfoRow({ icon, label, value, last }: { icon: string; label: string; value: string; last?: boolean }) {
+  return (
+    <View style={[rowStyles.row, !last && rowStyles.rowBorder]}>
+      <View style={rowStyles.left}>
+        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={16} color="#64748B" />
+        <Text style={rowStyles.label}>{label}</Text>
+      </View>
+      <Text style={rowStyles.value}>{value}</Text>
+    </View>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 13 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  label: { color: '#94A3B8', fontSize: 14 },
+  value: { color: '#F1F5F9', fontSize: 14, fontWeight: '600' },
+});
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#03045E' },
+  container: { flex: 1, backgroundColor: '#0F172A' },
   content: { padding: 20, paddingTop: 60 },
-  title: { color: '#fff', fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
+  title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 
-  // Profile Card
-  profileCard: {
-    backgroundColor: '#0A1929', borderRadius: 24, padding: 24, alignItems: 'center',
-    marginBottom: 24, borderWidth: 1, borderColor: '#0D2137',
+  // Avatar
+  avatarSection: { alignItems: 'center', marginBottom: 24 },
+  avatarCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: 'rgba(56,189,248,0.1)', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(56,189,248,0.2)', marginBottom: 12,
   },
-  avatarContainer: { position: 'relative', marginBottom: 12 },
-  avatar: { fontSize: 64 },
+  avatarName: { color: '#F1F5F9', fontSize: 20, fontWeight: '700', marginBottom: 6 },
   levelBadge: {
-    position: 'absolute', bottom: -4, right: -4,
-    backgroundColor: '#0D2137', borderRadius: 14, width: 28, height: 28,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#0A1929',
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(251,191,36,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10,
   },
-  levelBadgeText: { fontSize: 14 },
-  userName: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  userLevel: { color: '#5A7A9A', fontSize: 14, marginTop: 4, marginBottom: 16 },
+  levelText: { color: '#FBBF24', fontSize: 12, fontWeight: '600' },
 
-  levelProgressContainer: { width: '100%', marginBottom: 20 },
-  levelProgressBar: { height: 6, backgroundColor: '#0D2137', borderRadius: 3, overflow: 'hidden', marginBottom: 6 },
-  levelProgressFill: { height: '100%', backgroundColor: '#00B4D8', borderRadius: 3 },
-  levelProgressText: { color: '#5A7A9A', fontSize: 11, textAlign: 'center' },
-
-  statsRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  profileStat: { flex: 1, alignItems: 'center' },
-  profileStatValue: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  profileStatLabel: { color: '#5A7A9A', fontSize: 12, marginTop: 2 },
-  statDivider: { width: 1, height: 30, backgroundColor: '#0D2137' },
+  // Stats Row
+  statsRow: {
+    flexDirection: 'row', gap: 10, marginBottom: 24,
+  },
+  statItem: {
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14,
+    padding: 14, alignItems: 'center', gap: 4,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+  },
+  statValue: { color: '#F1F5F9', fontSize: 18, fontWeight: '700' },
+  statLabel: { color: '#475569', fontSize: 11, fontWeight: '500' },
 
   // Section
   section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 14 },
-  sectionCount: { color: '#5A7A9A', fontSize: 14 },
-  editButton: { color: '#00B4D8', fontSize: 14 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  sectionLabel: { color: '#94A3B8', fontSize: 13, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
+  sectionCount: { color: '#475569', fontSize: 12 },
+  editBtn: { color: '#38BDF8', fontSize: 13, fontWeight: '600' },
 
   // Badges
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   badgeItem: {
-    width: '18%', aspectRatio: 1, backgroundColor: '#0A1929', borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center', padding: 4,
-    borderWidth: 1, borderColor: '#0D2137',
+    width: '30%' as unknown as number, flexGrow: 1, flexBasis: '28%',
+    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 12, alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
   },
-  badgeItemEarned: { borderColor: '#FFD700', backgroundColor: '#1A1A00' },
-  badgeEmoji: { fontSize: 24, marginBottom: 2 },
-  badgeEmojiLocked: { opacity: 0.4 },
-  badgeName: { color: '#fff', fontSize: 8, textAlign: 'center' },
-  badgeNameLocked: { color: '#3A5A7A' },
+  badgeEarned: {
+    backgroundColor: 'rgba(251,191,36,0.06)', borderColor: 'rgba(251,191,36,0.12)',
+  },
+  badgeName: { color: '#F1F5F9', fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  badgeNameLocked: { color: '#334155' },
 
   // Info Card
   infoCard: {
-    backgroundColor: '#0A1929', borderRadius: 20, padding: 4,
-    borderWidth: 1, borderColor: '#0D2137',
+    backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16, paddingHorizontal: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
   },
-  infoRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16,
-  },
-  infoLabel: { color: '#5A7A9A', fontSize: 14 },
-  infoValue: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  infoInput: {
-    color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'right',
-    borderBottomWidth: 1, borderBottomColor: '#00B4D8', paddingVertical: 2, minWidth: 80,
-  },
-  infoDivider: { height: 1, backgroundColor: '#0D2137', marginHorizontal: 16 },
 
-  // Settings
-  settingsCard: {
-    backgroundColor: '#0A1929', borderRadius: 20, padding: 4,
-    borderWidth: 1, borderColor: '#0D2137',
+  // Edit
+  editGroup: { paddingVertical: 12, gap: 12 },
+  editRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  editLabel: { color: '#94A3B8', fontSize: 14 },
+  editInput: {
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, color: '#F1F5F9', fontSize: 14,
+    width: 180, textAlign: 'right',
   },
-  settingRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 16,
+
+  // Switch
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
+  switchLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  switchLabel: { color: '#F1F5F9', fontSize: 14, fontWeight: '500' },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.04)' },
+  intervalLabel: { color: '#64748B', fontSize: 12, marginTop: 12, marginBottom: 8 },
+  intervalRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  intervalBtn: {
+    flex: 1, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
   },
-  settingSection: { padding: 16 },
-  settingInfo: { flex: 1 },
-  settingLabel: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  settingDesc: { color: '#5A7A9A', fontSize: 12, marginTop: 2 },
-  settingDivider: { height: 1, backgroundColor: '#0D2137', marginHorizontal: 16 },
-
-  // Interval Buttons
-  intervalRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  intervalButton: {
-    flex: 1, paddingVertical: 10, borderRadius: 12,
-    backgroundColor: '#0D2137', alignItems: 'center',
+  intervalBtnActive: {
+    backgroundColor: 'rgba(56,189,248,0.12)', borderColor: '#38BDF8',
   },
-  intervalButtonActive: { backgroundColor: '#023E8A', borderWidth: 1, borderColor: '#00B4D8' },
-  intervalText: { color: '#5A7A9A', fontSize: 13, fontWeight: '600' },
-  intervalTextActive: { color: '#00B4D8' },
+  intervalText: { color: '#64748B', fontSize: 13, fontWeight: '600' },
+  intervalTextActive: { color: '#38BDF8' },
 
-  // Menu Items
-  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  menuEmoji: { fontSize: 20 },
-  menuText: { color: '#fff', fontSize: 14, flex: 1 },
-  menuArrow: { color: '#5A7A9A', fontSize: 20, fontWeight: '300' },
+  // Reset
+  resetBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(248,113,113,0.08)',
+    borderWidth: 1, borderColor: 'rgba(248,113,113,0.15)', marginBottom: 16,
+  },
+  resetText: { color: '#F87171', fontSize: 14, fontWeight: '600' },
 
-  version: { color: '#3A5A7A', fontSize: 12, textAlign: 'center', marginTop: 10 },
+  versionText: { color: '#334155', fontSize: 12, textAlign: 'center', marginBottom: 8 },
 });

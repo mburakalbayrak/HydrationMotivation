@@ -16,14 +16,14 @@ import {
 import { calculateDailyWater } from '@/constants/waterData';
 
 const GENDERS = [
-  { id: 'male', label: 'Erkek', emoji: '👨' },
-  { id: 'female', label: 'Kadın', emoji: '👩' },
+  { id: 'male', label: 'Erkek', icon: 'man-outline' as const },
+  { id: 'female', label: 'Kadın', icon: 'woman-outline' as const },
 ];
 
 const ACTIVITIES = [
-  { id: 'sedentary', label: 'Hareketsiz', emoji: '🧘', desc: 'Masa başı, az hareket' },
-  { id: 'active', label: 'Aktif', emoji: '🏃', desc: 'Düzenli egzersiz' },
-  { id: 'very_active', label: 'Çok Aktif', emoji: '🏋️', desc: 'Yoğun spor / fiziksel iş' },
+  { id: 'sedentary', label: 'Hareketsiz', icon: 'desktop-outline' as const, desc: 'Masa başı, az hareket' },
+  { id: 'active', label: 'Aktif', icon: 'walk-outline' as const, desc: 'Düzenli egzersiz' },
+  { id: 'very_active', label: 'Çok Aktif', icon: 'barbell-outline' as const, desc: 'Yoğun spor / fiziksel iş' },
 ];
 
 const TOTAL_STEPS = 5;
@@ -40,22 +40,18 @@ export default function OnboardingScreen() {
 
   const animateTransition = (next: number) => {
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
     ]).start();
-    setTimeout(() => setStep(next), 150);
+    setTimeout(() => setStep(next), 120);
   };
 
   const handleNext = () => {
-    if (step < TOTAL_STEPS - 1) {
-      animateTransition(step + 1);
-    }
+    if (step < TOTAL_STEPS - 1) animateTransition(step + 1);
   };
 
   const handleBack = () => {
-    if (step > 0) {
-      animateTransition(step - 1);
-    }
+    if (step > 0) animateTransition(step - 1);
   };
 
   const handleFinish = async () => {
@@ -74,8 +70,8 @@ export default function OnboardingScreen() {
     await AsyncStorage.setItem('activity', activity);
     await AsyncStorage.setItem('dailyGoal', dailyGoal.toString());
     await AsyncStorage.setItem('points', '0');
-    await AsyncStorage.setItem('unlockedBottles', JSON.stringify([1]));
-    await AsyncStorage.setItem('selectedBottle', '1');
+    await AsyncStorage.setItem('unlockedBottles', JSON.stringify(['classic']));
+    await AsyncStorage.setItem('selectedBottle', 'classic');
 
     router.replace('/(tabs)');
   };
@@ -97,24 +93,27 @@ export default function OnboardingScreen() {
 
   const renderStep = () => {
     switch (step) {
-      // ─── Hoş Geldin ───────────────────────────────
       case 0:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.welcomeEmoji}>💧</Text>
+            <View style={styles.iconCircle}>
+              <Ionicons name="water" size={48} color="#38BDF8" />
+            </View>
             <Text style={styles.welcomeTitle}>Hydration{'\n'}Motivation</Text>
             <Text style={styles.welcomeSubtitle}>
-              Su içme alışkanlığını{'\n'}eğlenceli hale getir!
+              Sağlıklı su içme alışkanlığını{'\n'}birlikte oluşturalım.
             </Text>
             <View style={styles.featureList}>
               {[
-                { emoji: '🎯', text: 'Kişisel su hedefi belirleme' },
-                { emoji: '🏆', text: 'Şişe koleksiyonu ve ödüller' },
-                { emoji: '📊', text: 'Detaylı istatistikler' },
-                { emoji: '🔔', text: 'Akıllı hatırlatıcılar' },
+                { icon: 'flag-outline' as const, text: 'Kişisel su hedefi belirleme' },
+                { icon: 'grid-outline' as const, text: 'Şişe koleksiyonu ve ödüller' },
+                { icon: 'stats-chart-outline' as const, text: 'Detaylı istatistikler' },
+                { icon: 'notifications-outline' as const, text: 'Akıllı hatırlatıcılar' },
               ].map((item) => (
                 <View key={item.text} style={styles.featureItem}>
-                  <Text style={styles.featureEmoji}>{item.emoji}</Text>
+                  <View style={styles.featureIconWrap}>
+                    <Ionicons name={item.icon} size={18} color="#38BDF8" />
+                  </View>
                   <Text style={styles.featureText}>{item.text}</Text>
                 </View>
               ))}
@@ -122,30 +121,32 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      // ─── İsim ─────────────────────────────────────
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepEmoji}>👋</Text>
+            <View style={styles.iconCircle}>
+              <Ionicons name="person-outline" size={40} color="#38BDF8" />
+            </View>
             <Text style={styles.stepTitle}>Merhaba!</Text>
             <Text style={styles.stepSubtitle}>Sana nasıl hitap edelim?</Text>
             <TextInput
               style={styles.textInput}
               value={name}
               onChangeText={setName}
-              placeholder="Adını gir..."
-              placeholderTextColor="#5A7A9A"
+              placeholder="Adını gir"
+              placeholderTextColor="#475569"
               autoFocus
             />
           </View>
         );
 
-      // ─── Cinsiyet ─────────────────────────────────
       case 2:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepEmoji}>⚡</Text>
-            <Text style={styles.stepTitle}>Cinsiyetin</Text>
+            <View style={styles.iconCircle}>
+              <Ionicons name="people-outline" size={40} color="#38BDF8" />
+            </View>
+            <Text style={styles.stepTitle}>Cinsiyet</Text>
             <Text style={styles.stepSubtitle}>Su ihtiyacını doğru hesaplamak için</Text>
             <View style={styles.optionRow}>
               {GENDERS.map((g) => (
@@ -154,17 +155,18 @@ export default function OnboardingScreen() {
                   style={[styles.genderCard, gender === g.id && styles.selectedCard]}
                   onPress={() => setGender(g.id)}
                 >
-                  <Text style={styles.genderEmoji}>{g.emoji}</Text>
+                  <Ionicons
+                    name={g.icon}
+                    size={36}
+                    color={gender === g.id ? '#38BDF8' : '#64748B'}
+                  />
                   <Text style={[styles.genderLabel, gender === g.id && styles.selectedLabel]}>
                     {g.label}
                   </Text>
                   {gender === g.id && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={22}
-                      color="#00B4D8"
-                      style={styles.checkIcon}
-                    />
+                    <View style={styles.checkBadge}>
+                      <Ionicons name="checkmark" size={14} color="#fff" />
+                    </View>
                   )}
                 </TouchableOpacity>
               ))}
@@ -172,16 +174,17 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      // ─── Boy / Kilo ───────────────────────────────
       case 3:
         return (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.stepContainer}
           >
-            <Text style={styles.stepEmoji}>📏</Text>
+            <View style={styles.iconCircle}>
+              <Ionicons name="resize-outline" size={40} color="#38BDF8" />
+            </View>
             <Text style={styles.stepTitle}>Boy & Kilo</Text>
-            <Text style={styles.stepSubtitle}>Günlük su miktarını hesaplayalım</Text>
+            <Text style={styles.stepSubtitle}>Günlük su hedefini hesaplayalım</Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Boy (cm)</Text>
@@ -189,8 +192,8 @@ export default function OnboardingScreen() {
                 style={styles.textInput}
                 value={height}
                 onChangeText={setHeight}
-                placeholder="Örn: 175"
-                placeholderTextColor="#5A7A9A"
+                placeholder="175"
+                placeholderTextColor="#475569"
                 keyboardType="numeric"
                 maxLength={3}
               />
@@ -202,8 +205,8 @@ export default function OnboardingScreen() {
                 style={styles.textInput}
                 value={weight}
                 onChangeText={setWeight}
-                placeholder="Örn: 70"
-                placeholderTextColor="#5A7A9A"
+                placeholder="70"
+                placeholderTextColor="#475569"
                 keyboardType="numeric"
                 maxLength={3}
               />
@@ -211,11 +214,12 @@ export default function OnboardingScreen() {
           </KeyboardAvoidingView>
         );
 
-      // ─── Aktivite Seviyesi ────────────────────────
       case 4:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepEmoji}>🏅</Text>
+            <View style={styles.iconCircle}>
+              <Ionicons name="pulse-outline" size={40} color="#38BDF8" />
+            </View>
             <Text style={styles.stepTitle}>Aktivite Seviyesi</Text>
             <Text style={styles.stepSubtitle}>Günlük hareket düzeyin</Text>
 
@@ -225,7 +229,9 @@ export default function OnboardingScreen() {
                 style={[styles.activityCard, activity === a.id && styles.selectedCard]}
                 onPress={() => setActivity(a.id)}
               >
-                <Text style={styles.activityEmoji}>{a.emoji}</Text>
+                <View style={[styles.activityIconWrap, activity === a.id && styles.activityIconActive]}>
+                  <Ionicons name={a.icon} size={22} color={activity === a.id ? '#38BDF8' : '#64748B'} />
+                </View>
                 <View style={styles.activityInfo}>
                   <Text style={[styles.activityLabel, activity === a.id && styles.selectedLabel]}>
                     {a.label}
@@ -233,16 +239,16 @@ export default function OnboardingScreen() {
                   <Text style={styles.activityDesc}>{a.desc}</Text>
                 </View>
                 {activity === a.id && (
-                  <Ionicons name="checkmark-circle" size={22} color="#00B4D8" />
+                  <Ionicons name="checkmark-circle" size={22} color="#38BDF8" />
                 )}
               </TouchableOpacity>
             ))}
 
             {activity ? (
               <View style={styles.resultCard}>
-                <Text style={styles.resultLabel}>Senin günlük hedefin</Text>
+                <Text style={styles.resultLabel}>Günlük su hedefin</Text>
                 <Text style={styles.resultValue}>{dailyGoal} ml</Text>
-                <Text style={styles.resultHint}>💧 Günde ~{Math.round(dailyGoal / 250)} bardak</Text>
+                <Text style={styles.resultHint}>Günde yaklaşık {Math.round(dailyGoal / 250)} bardak</Text>
               </View>
             ) : null}
           </View>
@@ -260,21 +266,19 @@ export default function OnboardingScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Progress Dots */}
-        <View style={styles.dotsContainer}>
+        {/* Progress */}
+        <View style={styles.progressRow}>
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <View
               key={i}
               style={[
-                styles.dot,
-                i === step && styles.dotActive,
-                i < step && styles.dotCompleted,
+                styles.progressSegment,
+                i <= step && styles.progressSegmentActive,
               ]}
             />
           ))}
         </View>
 
-        {/* Step Content */}
         <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>{renderStep()}</Animated.View>
       </ScrollView>
 
@@ -282,7 +286,7 @@ export default function OnboardingScreen() {
       <View style={styles.bottomBar}>
         {step > 0 ? (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={20} color="#90E0EF" />
+            <Ionicons name="chevron-back" size={20} color="#94A3B8" />
             <Text style={styles.backText}>Geri</Text>
           </TouchableOpacity>
         ) : (
@@ -295,16 +299,17 @@ export default function OnboardingScreen() {
             onPress={handleNext}
             disabled={isNextDisabled()}
           >
-            <Text style={styles.nextText}>{step === 0 ? 'Başla' : 'İleri'}</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={styles.nextText}>{step === 0 ? 'Başlayalım' : 'Devam'}</Text>
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.nextButton, styles.finishButton, isNextDisabled() && styles.disabledButton]}
+            style={[styles.nextButton, isNextDisabled() && styles.disabledButton]}
             onPress={handleFinish}
             disabled={isNextDisabled()}
           >
-            <Text style={styles.nextText}>Hazırım! 🚀</Text>
+            <Text style={styles.nextText}>Tamamla</Text>
+            <Ionicons name="checkmark" size={18} color="#fff" />
           </TouchableOpacity>
         )}
       </View>
@@ -313,85 +318,96 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#03045E' },
-  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 60 },
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 64 },
 
-  // Dots
-  dotsContainer: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 30 },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#023E8A' },
-  dotActive: { backgroundColor: '#00B4D8', width: 28 },
-  dotCompleted: { backgroundColor: '#0077B6' },
+  // Progress
+  progressRow: { flexDirection: 'row', gap: 6, marginBottom: 40 },
+  progressSegment: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.08)' },
+  progressSegmentActive: { backgroundColor: '#38BDF8' },
 
   // Steps
-  stepContainer: { flex: 1, alignItems: 'center', paddingTop: 20 },
-  stepEmoji: { fontSize: 64, marginBottom: 16 },
-  stepTitle: { color: '#fff', fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  stepSubtitle: { color: '#90E0EF', fontSize: 16, textAlign: 'center', marginBottom: 32 },
+  stepContainer: { flex: 1, alignItems: 'center', paddingTop: 16 },
+  iconCircle: {
+    width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(56,189,248,0.1)',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 24,
+  },
+  stepTitle: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
+  stepSubtitle: { color: '#64748B', fontSize: 15, textAlign: 'center', marginBottom: 32, lineHeight: 22 },
 
   // Welcome
-  welcomeEmoji: { fontSize: 80, marginBottom: 16 },
-  welcomeTitle: { color: '#fff', fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 12, lineHeight: 44 },
-  welcomeSubtitle: { color: '#90E0EF', fontSize: 18, textAlign: 'center', marginBottom: 40, lineHeight: 26 },
-  featureList: { width: '100%', gap: 16 },
-  featureItem: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#023E8A', padding: 16, borderRadius: 16 },
-  featureEmoji: { fontSize: 28 },
-  featureText: { color: '#ADE8F4', fontSize: 16, flex: 1 },
+  welcomeTitle: { color: '#F1F5F9', fontSize: 32, fontWeight: '800', textAlign: 'center', marginBottom: 12, lineHeight: 40, letterSpacing: -1 },
+  welcomeSubtitle: { color: '#64748B', fontSize: 16, textAlign: 'center', marginBottom: 40, lineHeight: 24 },
+  featureList: { width: '100%', gap: 12 },
+  featureItem: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.04)', padding: 16, borderRadius: 14 },
+  featureIconWrap: {
+    width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(56,189,248,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  featureText: { color: '#94A3B8', fontSize: 15, flex: 1 },
 
   // Inputs
   textInput: {
-    width: '100%', backgroundColor: '#023E8A', color: '#fff',
-    borderRadius: 16, padding: 18, fontSize: 18, borderWidth: 2,
-    borderColor: '#0077B6', textAlign: 'center',
+    width: '100%', backgroundColor: 'rgba(255,255,255,0.05)', color: '#F1F5F9',
+    borderRadius: 14, padding: 18, fontSize: 17, borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)', textAlign: 'center', fontWeight: '600',
   },
   inputGroup: { width: '100%', marginBottom: 16 },
-  inputLabel: { color: '#90E0EF', fontSize: 14, marginBottom: 8, marginLeft: 4 },
+  inputLabel: { color: '#64748B', fontSize: 13, marginBottom: 8, marginLeft: 4, fontWeight: '500' },
 
   // Gender
-  optionRow: { flexDirection: 'row', gap: 16, width: '100%' },
+  optionRow: { flexDirection: 'row', gap: 14, width: '100%' },
   genderCard: {
-    flex: 1, backgroundColor: '#023E8A', borderRadius: 20, padding: 24,
-    alignItems: 'center', gap: 12, borderWidth: 2, borderColor: '#0077B6',
+    flex: 1, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 18, padding: 24,
+    alignItems: 'center', gap: 10, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.06)',
   },
-  genderEmoji: { fontSize: 48 },
-  genderLabel: { color: '#90E0EF', fontSize: 16, fontWeight: '600' },
-  selectedCard: { borderColor: '#00B4D8', backgroundColor: '#0A3D6B' },
-  selectedLabel: { color: '#00B4D8' },
-  checkIcon: { position: 'absolute', top: 10, right: 10 },
+  genderLabel: { color: '#64748B', fontSize: 15, fontWeight: '600' },
+  selectedCard: { borderColor: '#38BDF8', backgroundColor: 'rgba(56,189,248,0.08)' },
+  selectedLabel: { color: '#38BDF8' },
+  checkBadge: {
+    position: 'absolute', top: 10, right: 10,
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#38BDF8',
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   // Activity
   activityCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#023E8A',
-    borderRadius: 16, padding: 18, gap: 14, width: '100%',
-    borderWidth: 2, borderColor: '#0077B6', marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14, padding: 16, gap: 14, width: '100%',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 10,
   },
-  activityEmoji: { fontSize: 36 },
+  activityIconWrap: {
+    width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  activityIconActive: { backgroundColor: 'rgba(56,189,248,0.12)' },
   activityInfo: { flex: 1 },
-  activityLabel: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  activityDesc: { color: '#90E0EF', fontSize: 13, marginTop: 2 },
+  activityLabel: { color: '#94A3B8', fontSize: 15, fontWeight: '600' },
+  activityDesc: { color: '#475569', fontSize: 13, marginTop: 2 },
 
   // Result
   resultCard: {
-    backgroundColor: '#0077B6', borderRadius: 20, padding: 24,
-    alignItems: 'center', width: '100%', marginTop: 12,
+    backgroundColor: 'rgba(56,189,248,0.1)', borderRadius: 18, padding: 24,
+    alignItems: 'center', width: '100%', marginTop: 16,
+    borderWidth: 1, borderColor: 'rgba(56,189,248,0.2)',
   },
-  resultLabel: { color: '#ADE8F4', fontSize: 14 },
-  resultValue: { color: '#fff', fontSize: 42, fontWeight: 'bold', marginVertical: 4 },
-  resultHint: { color: '#CAF0F8', fontSize: 14 },
+  resultLabel: { color: '#64748B', fontSize: 13, fontWeight: '500' },
+  resultValue: { color: '#F1F5F9', fontSize: 40, fontWeight: '800', marginVertical: 4, letterSpacing: -1 },
+  resultHint: { color: '#64748B', fontSize: 13 },
 
   // Bottom
   bottomBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, paddingVertical: 20, paddingBottom: 40,
-    borderTopWidth: 1, borderTopColor: '#023E8A',
+    paddingHorizontal: 24, paddingVertical: 16, paddingBottom: 40,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
   },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12 },
-  backText: { color: '#90E0EF', fontSize: 16 },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 12 },
+  backText: { color: '#94A3B8', fontSize: 15, fontWeight: '500' },
   nextButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#0077B6', paddingHorizontal: 28, paddingVertical: 16,
-    borderRadius: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#38BDF8', paddingHorizontal: 24, paddingVertical: 14,
+    borderRadius: 14,
   },
-  nextText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  finishButton: { backgroundColor: '#00B4D8' },
-  disabledButton: { opacity: 0.4 },
+  nextText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  disabledButton: { opacity: 0.3 },
 });
