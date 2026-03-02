@@ -258,23 +258,22 @@ export default function HomeScreen() {
           </CircularProgress>
         </View>
 
-        <View style={styles.waveBand} />
+        {/* Bottle Hero – ortalanmış büyük görsel */}
+        <Animated.View style={[styles.bottleHero, { transform: [{ scale: scaleAnim }] }]}>
+          <WaterBottle
+            progress={progress}
+            width={130}
+            bottleType={selectedBottle.id}
+            tintColor={selectedBottle.color}
+            showGauge={false}
+          />
+          <Text style={styles.bottleName}>{selectedBottle.name}</Text>
+        </Animated.View>
 
-        <View style={styles.targetBottom}>
-          <TouchableOpacity style={styles.primaryDrinkBtn} onPress={() => addWater(200)} activeOpacity={0.85}>
-            <Text style={styles.primaryDrinkText}>200 ml İç</Text>
-          </TouchableOpacity>
-
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <WaterBottle
-              progress={progress}
-              width={88}
-              bottleType={selectedBottle.id}
-              tintColor={selectedBottle.color}
-              showGauge={false}
-            />
-          </Animated.View>
-        </View>
+        <TouchableOpacity style={styles.primaryDrinkBtn} onPress={() => addWater(200)} activeOpacity={0.85}>
+          <Ionicons name="water" size={17} color="#F8FAFC" />
+          <Text style={styles.primaryDrinkText}>200 ml İç</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Quick Add */}
@@ -501,29 +500,31 @@ const styles = StyleSheet.create({
   targetStatusText: { color: '#BAE6FD', fontSize: 12, fontWeight: '700' },
   ringValue: { color: '#E2E8F0', fontSize: 20, fontWeight: '800' },
   ringSub: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-  waveBand: {
-    position: 'absolute',
-    left: -20,
-    right: -20,
-    bottom: 52,
-    height: 54,
-    backgroundColor: 'rgba(56,189,248,0.14)',
-    borderRadius: 120,
-    transform: [{ rotate: '-3deg' }],
-  },
-  targetBottom: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  bottleHero: {
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  bottleName: {
+    color: '#7DD3FC',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 6,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   primaryDrinkBtn: {
     backgroundColor: '#0284C7',
     borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
   },
-  primaryDrinkText: { color: '#F8FAFC', fontSize: 18, fontWeight: '700' },
+  primaryDrinkText: { color: '#F8FAFC', fontSize: 17, fontWeight: '700' },
 
   addSection: { marginBottom: 16 },
   sectionLabel: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase' },
