@@ -1,4 +1,7 @@
 // ─── Şişe Koleksiyonu ─────────────────────────────────────
+export const DEV_UNLOCK_ALL_BOTTLES = true;
+export const DEV_POINTS_FOR_TEST = 9999;
+
 export const BOTTLES = [
   { id: 'classic', name: 'Plastik Şişe', icon: 'water-outline' as const, cost: 0, description: 'Başlangıç şişen', color: '#64748B' },
   { id: 'glass', name: 'Cam Şişe', icon: 'cafe-outline' as const, cost: 100, description: 'Şık ve çevreci', color: '#38BDF8' },

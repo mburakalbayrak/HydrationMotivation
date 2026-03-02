@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@/constants/storageKeys';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,7 +20,7 @@ export default function RootLayout() {
 
     const checkAndNavigate = async () => {
       // Her segment değişiminde AsyncStorage'dan tekrar kontrol et
-      const onboarded = await AsyncStorage.getItem('onboarded');
+      const onboarded = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED);
       const currentlyOnboarded = onboarded === 'true';
 
       if (currentlyOnboarded !== isOnboarded) {
@@ -41,7 +42,7 @@ export default function RootLayout() {
 
   const checkOnboarding = async () => {
     try {
-      const onboarded = await AsyncStorage.getItem('onboarded');
+      const onboarded = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED);
       setIsOnboarded(onboarded === 'true');
     } catch {
       /* ignore */
@@ -52,7 +53,7 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#03045E' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1C3F75' }}>
         <ActivityIndicator size="large" color="#00B4D8" />
       </View>
     );

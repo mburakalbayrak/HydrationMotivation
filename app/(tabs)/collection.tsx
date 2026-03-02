@@ -1,15 +1,17 @@
+import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
-import { BOTTLES } from '../../constants/waterData';
+import WaterBottle from '../../components/WaterBottle';
+import { BOTTLES, DEV_POINTS_FOR_TEST, DEV_UNLOCK_ALL_BOTTLES } from '../../constants/waterData';
 
 export default function CollectionScreen() {
   const [points, setPoints] = useState(0);
@@ -22,11 +24,30 @@ export default function CollectionScreen() {
 
   const loadData = async () => {
     try {
-      const p = await AsyncStorage.getItem('points');
+      if (DEV_UNLOCK_ALL_BOTTLES) {
+        const allBottleIds = BOTTLES.map((b) => b.id);
+        setUnlockedBottles(allBottleIds);
+        setPoints(DEV_POINTS_FOR_TEST);
+
+        await AsyncStorage.setItem(STORAGE_KEYS.UNLOCKED_BOTTLES, JSON.stringify(allBottleIds));
+        await AsyncStorage.setItem(STORAGE_KEYS.POINTS, DEV_POINTS_FOR_TEST.toString());
+
+        const sb = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_BOTTLE);
+        if (!sb) {
+          await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_BOTTLE, 'classic');
+          setSelectedBottle('classic');
+        } else {
+          setSelectedBottle(sb);
+        }
+
+        return;
+      }
+
+      const p = await AsyncStorage.getItem(STORAGE_KEYS.POINTS);
       if (p) setPoints(parseInt(p));
-      const ub = await AsyncStorage.getItem('unlockedBottles');
+      const ub = await AsyncStorage.getItem(STORAGE_KEYS.UNLOCKED_BOTTLES);
       if (ub) setUnlockedBottles(JSON.parse(ub));
-      const sb = await AsyncStorage.getItem('selectedBottle');
+      const sb = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_BOTTLE);
       if (sb) setSelectedBottle(sb);
     } catch {
       /* ignore */
@@ -47,8 +68,8 @@ export default function CollectionScreen() {
           const newUnlocked = [...unlockedBottles, bottleId];
           setPoints(newPoints);
           setUnlockedBottles(newUnlocked);
-          await AsyncStorage.setItem('points', newPoints.toString());
-          await AsyncStorage.setItem('unlockedBottles', JSON.stringify(newUnlocked));
+          await AsyncStorage.setItem(STORAGE_KEYS.POINTS, newPoints.toString());
+          await AsyncStorage.setItem(STORAGE_KEYS.UNLOCKED_BOTTLES, JSON.stringify(newUnlocked));
         },
       },
     ]);
@@ -56,7 +77,7 @@ export default function CollectionScreen() {
 
   const selectBottle = async (bottleId: string) => {
     setSelectedBottle(bottleId);
-    await AsyncStorage.setItem('selectedBottle', bottleId);
+    await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_BOTTLE, bottleId);
   };
 
   const isUnlocked = (id: string) => unlockedBottles.includes(id);
@@ -108,13 +129,21 @@ export default function CollectionScreen() {
                 </View>
               )}
 
-              {/* Icon */}
-              <View style={[styles.bottleIconWrap, { backgroundColor: unlocked ? `${bottle.color}18` : 'rgba(255,255,255,0.04)' }]}>
-                <Ionicons
-                  name={bottle.icon as keyof typeof Ionicons.glyphMap}
-                  size={28}
-                  color={unlocked ? bottle.color : '#334155'}
+              {/* Preview */}
+              <View style={styles.bottlePreviewWrap}>
+                <WaterBottle
+                  progress={0.45}
+                  width={56}
+                  bottleType={bottle.id}
+                  tintColor={unlocked ? bottle.color : '#475569'}
                 />
+                <View style={[styles.bottleIconBadge, { backgroundColor: unlocked ? `${bottle.color}22` : 'rgba(255,255,255,0.05)' }]}>
+                  <Ionicons
+                    name={bottle.icon as keyof typeof Ionicons.glyphMap}
+                    size={12}
+                    color={unlocked ? bottle.color : '#475569'}
+                  />
+                </View>
               </View>
 
               {/* Label */}
@@ -160,7 +189,7 @@ export default function CollectionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#15294A' },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 
@@ -182,7 +211,7 @@ const styles = StyleSheet.create({
   bottleCard: {
     width: '47%' as unknown as number, // roughly half minus gap
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 16, padding: 16, alignItems: 'center', gap: 10,
+    borderRadius: 16, padding: 14, alignItems: 'center', gap: 10,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
     position: 'relative', flexGrow: 1, flexBasis: '45%',
   },
@@ -203,9 +232,27 @@ const styles = StyleSheet.create({
     width: 20, height: 20, borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center',
   },
-  bottleIconWrap: {
-    width: 56, height: 56, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
+  bottlePreviewWrap: {
+    width: '100%',
+    minHeight: 138,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15,23,42,0.28)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+    marginBottom: 2,
+  },
+  bottleIconBadge: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bottleName: { color: '#F1F5F9', fontSize: 13, fontWeight: '600', textAlign: 'center' },
   bottleNameLocked: { color: '#475569' },

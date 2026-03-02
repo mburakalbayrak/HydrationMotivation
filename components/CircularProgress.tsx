@@ -26,7 +26,7 @@ export default function CircularProgress({
         <Defs>
           <LinearGradient id="progressGrad" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor="#38BDF8" />
-            <Stop offset="1" stopColor="#818CF8" />
+            <Stop offset="1" stopColor="#0284C7" />
           </LinearGradient>
         </Defs>
         <Circle

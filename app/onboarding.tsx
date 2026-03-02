@@ -1,19 +1,20 @@
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { calculateDailyWater } from '@/constants/waterData';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Animated,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { calculateDailyWater } from '@/constants/waterData';
 
 const GENDERS = [
   { id: 'male', label: 'Erkek', icon: 'man-outline' as const },
@@ -62,16 +63,16 @@ export default function OnboardingScreen() {
       activity || 'active',
     );
 
-    await AsyncStorage.setItem('onboarded', 'true');
-    await AsyncStorage.setItem('userName', name || 'Kullanıcı');
-    await AsyncStorage.setItem('gender', gender);
-    await AsyncStorage.setItem('weight', weight);
-    await AsyncStorage.setItem('height', height);
-    await AsyncStorage.setItem('activity', activity);
-    await AsyncStorage.setItem('dailyGoal', dailyGoal.toString());
-    await AsyncStorage.setItem('points', '0');
-    await AsyncStorage.setItem('unlockedBottles', JSON.stringify(['classic']));
-    await AsyncStorage.setItem('selectedBottle', 'classic');
+    await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, name || 'Kullanıcı');
+    await AsyncStorage.setItem(STORAGE_KEYS.GENDER, gender);
+    await AsyncStorage.setItem(STORAGE_KEYS.WEIGHT, weight);
+    await AsyncStorage.setItem(STORAGE_KEYS.HEIGHT, height);
+    await AsyncStorage.setItem(STORAGE_KEYS.ACTIVITY, activity);
+    await AsyncStorage.setItem(STORAGE_KEYS.DAILY_GOAL, dailyGoal.toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.POINTS, '0');
+    await AsyncStorage.setItem(STORAGE_KEYS.UNLOCKED_BOTTLES, JSON.stringify(['classic']));
+    await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_BOTTLE, 'classic');
 
     router.replace('/(tabs)');
   };
@@ -318,7 +319,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#15294A' },
   scrollContent: { flexGrow: 1, padding: 24, paddingTop: 64 },
 
   // Progress

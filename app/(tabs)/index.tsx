@@ -1,17 +1,20 @@
+import CircularProgress from '@/components/CircularProgress';
+import WaterBottle from '@/components/WaterBottle';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { BOTTLES, DAILY_TASKS, GLASS_SIZES, getDailyQuote, getLevel } from '@/constants/waterData';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import WaterBottle from '@/components/WaterBottle';
-import { DAILY_TASKS, GLASS_SIZES, getDailyQuote, getLevel } from '@/constants/waterData';
 
 export default function HomeScreen() {
   const [waterAmount, setWaterAmount] = useState(0);
@@ -20,59 +23,126 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState(0);
   const [userName, setUserName] = useState('');
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [drinkCount, setDrinkCount] = useState(0);
+  const [weeklyData, setWeeklyData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [selectedBottleId, setSelectedBottleId] = useState('classic');
   const [scaleAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
     loadData();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      const syncSelectedBottle = async () => {
+        try {
+          const savedBottle = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_BOTTLE);
+          if (savedBottle) setSelectedBottleId(savedBottle);
+          else setSelectedBottleId('classic');
+        } catch {
+          /* ignore */
+        }
+      };
+
+      syncSelectedBottle();
+    }, []),
+  );
+
   const loadData = async () => {
     try {
       const today = new Date().toDateString();
-      const savedDate = await AsyncStorage.getItem('date');
+      const savedDate = await AsyncStorage.getItem(STORAGE_KEYS.DATE);
+      const savedWeekly = await AsyncStorage.getItem(STORAGE_KEYS.WEEKLY_DATA);
+      let currentWeekly = savedWeekly ? JSON.parse(savedWeekly) : [0, 0, 0, 0, 0, 0, 0];
 
       if (savedDate !== today) {
-        await AsyncStorage.setItem('date', today);
-        await AsyncStorage.setItem('water', '0');
-        await AsyncStorage.setItem('completedTasks', JSON.stringify([]));
+        await AsyncStorage.setItem(STORAGE_KEYS.DATE, today);
+        await AsyncStorage.setItem(STORAGE_KEYS.WATER, '0');
+        await AsyncStorage.setItem(STORAGE_KEYS.DRINK_COUNT, '0');
+        await AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_TASKS, JSON.stringify([]));
         setWaterAmount(0);
+        setDrinkCount(0);
         setCompletedTasks([]);
+
+        if (savedDate) {
+          const totalDays = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_DAYS)) || '0') + 1;
+          await AsyncStorage.setItem(STORAGE_KEYS.TOTAL_DAYS, totalDays.toString());
+        }
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         if (savedDate === yesterday.toDateString()) {
-          const prevWater = parseInt((await AsyncStorage.getItem('prevDayWater')) || '0');
-          const goal = parseInt((await AsyncStorage.getItem('dailyGoal')) || '2500');
+          const prevWater = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.PREV_DAY_WATER)) || '0');
+          const goal = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL)) || '2500');
+
+          const yIndex = (yesterday.getDay() + 6) % 7;
+          currentWeekly[yIndex] = prevWater;
+          await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_DATA, JSON.stringify(currentWeekly));
+          setWeeklyData(currentWeekly);
+
+          const prevBest = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.BEST_DAY)) || '0');
+          const newBest = Math.max(prevBest, prevWater);
+          await AsyncStorage.setItem(STORAGE_KEYS.BEST_DAY, newBest.toString());
+
           if (prevWater >= goal) {
-            const newStreak = (parseInt((await AsyncStorage.getItem('streak')) || '0')) + 1;
+            const newStreak = (parseInt((await AsyncStorage.getItem(STORAGE_KEYS.STREAK)) || '0')) + 1;
             setStreak(newStreak);
-            await AsyncStorage.setItem('streak', newStreak.toString());
+            await AsyncStorage.setItem(STORAGE_KEYS.STREAK, newStreak.toString());
           } else {
             setStreak(0);
-            await AsyncStorage.setItem('streak', '0');
+            await AsyncStorage.setItem(STORAGE_KEYS.STREAK, '0');
           }
         } else if (savedDate) {
           setStreak(0);
-          await AsyncStorage.setItem('streak', '0');
+          await AsyncStorage.setItem(STORAGE_KEYS.STREAK, '0');
         }
       } else {
-        const saved = await AsyncStorage.getItem('water');
+        const saved = await AsyncStorage.getItem(STORAGE_KEYS.WATER);
         if (saved) setWaterAmount(parseInt(saved));
-        const tasks = await AsyncStorage.getItem('completedTasks');
+        const tasks = await AsyncStorage.getItem(STORAGE_KEYS.COMPLETED_TASKS);
         if (tasks) setCompletedTasks(JSON.parse(tasks));
+        const count = await AsyncStorage.getItem(STORAGE_KEYS.DRINK_COUNT);
+        if (count) setDrinkCount(parseInt(count));
+        if (savedWeekly) setWeeklyData(JSON.parse(savedWeekly));
       }
 
-      const goal = await AsyncStorage.getItem('dailyGoal');
+      const goal = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
       if (goal) setDailyGoal(parseInt(goal));
-      const savedPoints = await AsyncStorage.getItem('points');
+      const savedPoints = await AsyncStorage.getItem(STORAGE_KEYS.POINTS);
       if (savedPoints) setPoints(parseInt(savedPoints));
-      const savedStreak = await AsyncStorage.getItem('streak');
+      const savedStreak = await AsyncStorage.getItem(STORAGE_KEYS.STREAK);
       if (savedStreak) setStreak(parseInt(savedStreak));
-      const savedName = await AsyncStorage.getItem('userName');
+      const savedName = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
       if (savedName) setUserName(savedName);
+      const savedBottle = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_BOTTLE);
+      if (savedBottle) setSelectedBottleId(savedBottle);
     } catch {
       /* ignore */
     }
+  };
+
+  const completeTask = async (taskId: string) => {
+    if (completedTasks.includes(taskId)) return;
+    const task = DAILY_TASKS.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const updatedTasks = [...completedTasks, taskId];
+    const newPoints = points + task.reward;
+
+    setCompletedTasks(updatedTasks);
+    setPoints(newPoints);
+
+    await AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_TASKS, JSON.stringify(updatedTasks));
+    await AsyncStorage.setItem(STORAGE_KEYS.POINTS, newPoints.toString());
+  };
+
+  const evaluateTasks = async (newAmount: number, newDrinkCount: number) => {
+    const hour = new Date().getHours();
+    if (hour < 9 && newAmount >= 250) await completeTask('morning_water');
+    if (newAmount >= dailyGoal / 2) await completeTask('half_goal');
+    if (newAmount >= dailyGoal) await completeTask('full_goal');
+    if (newDrinkCount >= 3) await completeTask('three_times');
+    if (hour >= 20 && newAmount >= 200) await completeTask('evening_water');
   };
 
   const animatePulse = useCallback(() => {
@@ -84,15 +154,32 @@ export default function HomeScreen() {
 
   const addWater = async (amount: number) => {
     const newAmount = Math.min(waterAmount + amount, 5000);
+    const newDrinkCount = drinkCount + 1;
+    const dayIndex = (new Date().getDay() + 6) % 7;
+    const updatedWeekly = [...weeklyData];
+    updatedWeekly[dayIndex] = newAmount;
+
     setWaterAmount(newAmount);
-    await AsyncStorage.setItem('water', newAmount.toString());
-    await AsyncStorage.setItem('prevDayWater', newAmount.toString());
+    setDrinkCount(newDrinkCount);
+    setWeeklyData(updatedWeekly);
+
+    await AsyncStorage.setItem(STORAGE_KEYS.WATER, newAmount.toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.PREV_DAY_WATER, newAmount.toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.DRINK_COUNT, newDrinkCount.toString());
+    await AsyncStorage.setItem(STORAGE_KEYS.WEEKLY_DATA, JSON.stringify(updatedWeekly));
+
+    const best = parseInt((await AsyncStorage.getItem(STORAGE_KEYS.BEST_DAY)) || '0');
+    if (newAmount > best) {
+      await AsyncStorage.setItem(STORAGE_KEYS.BEST_DAY, newAmount.toString());
+    }
+
+    await evaluateTasks(newAmount, newDrinkCount);
     animatePulse();
 
     if (newAmount >= dailyGoal && waterAmount < dailyGoal) {
       const newPoints = points + 100;
       setPoints(newPoints);
-      await AsyncStorage.setItem('points', newPoints.toString());
+      await AsyncStorage.setItem(STORAGE_KEYS.POINTS, newPoints.toString());
       Alert.alert('Tebrikler!', 'Günlük hedefini tamamladın! +100 puan kazandın.');
     }
   };
@@ -102,6 +189,21 @@ export default function HomeScreen() {
   const level = getLevel(points);
   const quote = getDailyQuote();
   const remaining = Math.max(dailyGoal - waterAmount, 0);
+  const selectedBottle = BOTTLES.find((b) => b.id === selectedBottleId) || BOTTLES[0];
+  const weekBars = weeklyData.map((v) => Math.min(Math.max(v / Math.max(dailyGoal, 1), 0.08), 1));
+  const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cts'];
+  const now = new Date();
+  const activeDay = now.getDay();
+  const weekDays = useMemo(
+    () =>
+      dayNames.map((name, index) => {
+        const offset = index - activeDay;
+        const date = new Date(now);
+        date.setDate(now.getDate() + offset);
+        return { name, day: date.getDate(), isActive: index === activeDay };
+      }),
+    [activeDay],
+  );
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -114,51 +216,77 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.userName}>{userName || 'Kullanıcı'}</Text>
+        <View style={styles.profileRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{(userName || 'K').slice(0, 1).toUpperCase()}</Text>
+          </View>
+          <View>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.userName}>{userName || 'Kullanıcı'}</Text>
+          </View>
         </View>
-        <View style={styles.headerBadges}>
-          {streak > 0 && (
-            <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={14} color="#FB923C" />
-              <Text style={styles.streakText}>{streak}</Text>
-            </View>
-          )}
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelText}>Lv.{level.level}</Text>
+        <View style={styles.headerActions}>
+          <View style={styles.headerIconBtn}>
+            <Ionicons name="notifications-outline" size={18} color="#94A3B8" />
+          </View>
+          <View style={styles.headerIconBtn}>
+            <Ionicons name="calendar-outline" size={18} color="#94A3B8" />
           </View>
         </View>
       </View>
 
-      {/* Main Bottle */}
-      <View style={styles.progressSection}>
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <WaterBottle progress={progress} width={150}>
-            <Text style={styles.percentText}>{percentage}%</Text>
-            <Text style={styles.amountText}>{waterAmount} ml</Text>
-            <Text style={styles.goalText}>/ {dailyGoal} ml</Text>
-          </WaterBottle>
-        </Animated.View>
+      {/* Search */}
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={19} color="#94A3B8" />
+        <Text style={styles.searchText}>Ara...</Text>
       </View>
 
-      {/* Status */}
-      <Text style={styles.statusText}>
-        {waterAmount >= dailyGoal
-          ? 'Hedef tamamlandı! 🎉'
-          : `${remaining} ml daha içmelisin`}
-      </Text>
+      {/* Daily Drink Target */}
+      <View style={styles.targetCard}>
+        <View style={styles.targetTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.targetTitle}>Günlük Su Hedefi</Text>
+            <Text style={styles.targetSubtitle}>{dailyGoal} ml hedef ({Math.round(dailyGoal / 200)} bardak)</Text>
+            <View style={styles.targetStatusPill}>
+              <Text style={styles.targetStatusText}>{remaining > 0 ? `${remaining} ml kaldı` : 'Hedef tamamlandı 🎉'}</Text>
+            </View>
+          </View>
+
+          <CircularProgress size={132} strokeWidth={12} progress={progress}>
+            <Text style={styles.ringValue}>{waterAmount}ml</Text>
+            <Text style={styles.ringSub}>/{dailyGoal}ml</Text>
+          </CircularProgress>
+        </View>
+
+        <View style={styles.waveBand} />
+
+        <View style={styles.targetBottom}>
+          <TouchableOpacity style={styles.primaryDrinkBtn} onPress={() => addWater(200)} activeOpacity={0.85}>
+            <Text style={styles.primaryDrinkText}>200 ml İç</Text>
+          </TouchableOpacity>
+
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <WaterBottle
+              progress={progress}
+              width={88}
+              bottleType={selectedBottle.id}
+              tintColor={selectedBottle.color}
+              showGauge={false}
+            />
+          </Animated.View>
+        </View>
+      </View>
 
       {/* Quick Add */}
       <View style={styles.addSection}>
-        <Text style={styles.sectionLabel}>Su Ekle (ml)</Text>
+        <Text style={styles.sectionLabel}>Hızlı Ekle</Text>
         <View style={styles.glassRow}>
           {GLASS_SIZES.map((glass) => (
             <TouchableOpacity
               key={glass.amount}
               style={styles.glassButton}
               onPress={() => addWater(glass.amount)}
-              activeOpacity={0.6}
+              activeOpacity={0.85}
             >
               <Text style={styles.glassAmount}>+{glass.label}</Text>
             </TouchableOpacity>
@@ -166,46 +294,78 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Stats Row */}
-      <View style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Ionicons name="star" size={18} color="#FBBF24" />
-          <Text style={styles.statValue}>{points}</Text>
-          <Text style={styles.statLabel}>Puan</Text>
+      {/* Takvim ve Haftalık Durum */}
+      <View style={styles.weekCard}>
+        <Text style={styles.weekTitle}>Bugün, {now.toLocaleDateString('tr-TR')}</Text>
+        <View style={styles.weekDaysRow}>
+          {weekDays.map((item) => (
+            <View key={`${item.name}-${item.day}`} style={[styles.dayChip, item.isActive && styles.dayChipActive]}>
+              <Text style={[styles.dayName, item.isActive && styles.dayNameActive]}>{item.name}</Text>
+              <Text style={[styles.dayNum, item.isActive && styles.dayNumActive]}>{item.day}</Text>
+            </View>
+          ))}
         </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Ionicons name="trophy" size={18} color="#A78BFA" />
-          <Text style={styles.statValue}>{level.name}</Text>
-          <Text style={styles.statLabel}>Seviye</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Ionicons name="flame" size={18} color="#FB923C" />
-          <Text style={styles.statValue}>{streak}</Text>
-          <Text style={styles.statLabel}>Seri</Text>
+
+        <View style={styles.metricRow}>
+          <View style={styles.metricCard}>
+            <Ionicons name="flame-outline" size={16} color="#38BDF8" />
+            <Text style={styles.metricValue}>{Math.round(waterAmount * 0.04)} kcal</Text>
+            <Text style={styles.metricLabel}>Yakılan Kalori</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Ionicons name="pulse-outline" size={16} color="#38BDF8" />
+            <Text style={styles.metricValue}>{68 + Math.min(streak, 20)} bpm</Text>
+            <Text style={styles.metricLabel}>Nabız</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Ionicons name="time-outline" size={16} color="#38BDF8" />
+            <Text style={styles.metricValue}>{String(Math.max(streak, 1)).padStart(2, '0')}:00</Text>
+            <Text style={styles.metricLabel}>Egzersiz Süresi</Text>
+          </View>
         </View>
       </View>
 
-      {/* Daily Tasks */}
-      <View style={styles.tasksSection}>
-        <Text style={styles.sectionLabel}>Günlük Görevler</Text>
-        {DAILY_TASKS.slice(0, 3).map((task) => {
+      {/* Hydration Stats */}
+      <View style={styles.statsCard}>
+        <View style={styles.statsHeaderRow}>
+          <Text style={styles.statsTitle}>Hidratasyon İstatistikleri</Text>
+          <Text style={styles.statsRange}>Bu Hafta</Text>
+        </View>
+
+        <View style={styles.barChartRow}>
+          {weekBars.map((bar, idx) => (
+            <View key={idx} style={styles.barItem}>
+              <View style={[styles.barFill, { height: `${Math.round(bar * 100)}%` }]} />
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.statsFooterRow}>
+          <Text style={styles.statsPill}>Lv.{level.level} • {level.name}</Text>
+          <Text style={styles.statsPill}>{points} puan</Text>
+          <Text style={styles.statsPill}>{streak} seri</Text>
+        </View>
+      </View>
+
+      {/* Günlük Görevler */}
+      <View style={styles.tasksCard}>
+        <Text style={styles.tasksTitle}>Günlük Görevler</Text>
+        {DAILY_TASKS.slice(0, 4).map((task) => {
           const done = completedTasks.includes(task.id);
           return (
             <View key={task.id} style={[styles.taskRow, done && styles.taskRowDone]}>
               <View style={[styles.taskIcon, done && styles.taskIconDone]}>
                 <Ionicons
                   name={done ? 'checkmark' : (task.icon as keyof typeof Ionicons.glyphMap)}
-                  size={16}
-                  color={done ? '#fff' : '#64748B'}
+                  size={14}
+                  color={done ? '#fff' : '#7DD3FC'}
                 />
               </View>
               <View style={styles.taskInfo}>
-                <Text style={[styles.taskName, done && styles.taskNameDone]}>{task.name}</Text>
+                <Text style={styles.taskName}>{task.name}</Text>
                 <Text style={styles.taskDesc}>{task.description}</Text>
               </View>
-              <Text style={[styles.taskReward, done && styles.taskRewardDone]}>+{task.reward}</Text>
+              <Text style={styles.taskReward}>+{task.reward}</Text>
             </View>
           );
         })}
@@ -213,7 +373,7 @@ export default function HomeScreen() {
 
       {/* Quote */}
       <View style={styles.quoteCard}>
-        <Ionicons name="chatbubble-outline" size={16} color="#475569" />
+        <Ionicons name="water-outline" size={16} color="#38BDF8" />
         <Text style={styles.quoteText}>{quote}</Text>
       </View>
 
@@ -222,7 +382,11 @@ export default function HomeScreen() {
         style={styles.resetButton}
         onPress={async () => {
           setWaterAmount(0);
-          await AsyncStorage.setItem('water', '0');
+          setDrinkCount(0);
+          setCompletedTasks([]);
+          await AsyncStorage.setItem(STORAGE_KEYS.WATER, '0');
+          await AsyncStorage.setItem(STORAGE_KEYS.DRINK_COUNT, '0');
+          await AsyncStorage.setItem(STORAGE_KEYS.COMPLETED_TASKS, JSON.stringify([]));
         }}
       >
         <Ionicons name="refresh-outline" size={15} color="#475569" />
@@ -235,84 +399,241 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  content: { padding: 20, paddingTop: 60 },
+  container: { flex: 1, backgroundColor: '#15294A' },
+  content: { padding: 20, paddingTop: 56, paddingBottom: 26 },
 
-  // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  greeting: { color: '#475569', fontSize: 14, fontWeight: '500' },
-  userName: { color: '#F1F5F9', fontSize: 22, fontWeight: '700', marginTop: 2, letterSpacing: -0.5 },
-  headerBadges: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  streakBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(251,146,60,0.12)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1D4ED8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  streakText: { color: '#FB923C', fontSize: 13, fontWeight: '700' },
-  levelBadge: {
-    backgroundColor: 'rgba(56,189,248,0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
+  avatarText: { color: '#E2E8F0', fontSize: 18, fontWeight: '800' },
+  greeting: { color: '#94A3B8', fontSize: 13, fontWeight: '500' },
+  userName: { color: '#F8FAFC', fontSize: 29, fontWeight: '800', marginTop: 1, letterSpacing: -0.8 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  headerIconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#0F1B36',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.18)',
   },
-  levelText: { color: '#38BDF8', fontSize: 13, fontWeight: '700' },
 
-  // Progress
-  progressSection: { alignItems: 'center', marginVertical: 16 },
-  percentText: { color: '#F1F5F9', fontSize: 38, fontWeight: '800', letterSpacing: -2 },
-  amountText: { color: '#E2E8F0', fontSize: 15, fontWeight: '600', marginTop: 2 },
-  goalText: { color: '#94A3B8', fontSize: 13, marginTop: 1 },
+  searchBar: {
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#0F1B36',
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.16)',
+  },
+  searchText: { color: '#94A3B8', fontSize: 17, fontWeight: '500' },
 
-  // Status
-  statusText: { color: '#64748B', fontSize: 14, textAlign: 'center', marginBottom: 24, fontWeight: '500' },
+  weekCard: {
+    borderRadius: 26,
+    backgroundColor: '#0F1B36',
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.18)',
+  },
+  weekTitle: { color: '#E2E8F0', fontSize: 21, fontWeight: '800', marginBottom: 14 },
+  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  dayChip: {
+    width: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 3,
+  },
+  dayChipActive: { backgroundColor: '#0284C7' },
+  dayName: { color: '#CBD5E1', fontSize: 12, fontWeight: '600' },
+  dayNameActive: { color: '#FFFFFF' },
+  dayNum: { color: '#38BDF8', fontSize: 16, fontWeight: '800' },
+  dayNumActive: { color: '#FFFFFF' },
 
-  // Glass buttons
-  addSection: { marginBottom: 20 },
-  sectionLabel: { color: '#94A3B8', fontSize: 13, fontWeight: '600', marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
+  metricRow: { flexDirection: 'row', gap: 10 },
+  metricCard: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15,23,42,0.65)',
+    padding: 12,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.2)',
+  },
+  metricValue: { color: '#F8FAFC', fontSize: 22, fontWeight: '800' },
+  metricLabel: { color: '#94A3B8', fontSize: 12, fontWeight: '500' },
+
+  targetCard: {
+    borderRadius: 26,
+    backgroundColor: '#0F1B36',
+    padding: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.18)',
+  },
+  targetTop: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  targetTitle: { color: '#E2E8F0', fontSize: 19, fontWeight: '800' },
+  targetSubtitle: { color: '#94A3B8', fontSize: 13, marginTop: 4 },
+  targetStatusPill: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(56,189,248,0.16)',
+  },
+  targetStatusText: { color: '#BAE6FD', fontSize: 12, fontWeight: '700' },
+  ringValue: { color: '#E2E8F0', fontSize: 20, fontWeight: '800' },
+  ringSub: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
+  waveBand: {
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    bottom: 52,
+    height: 54,
+    backgroundColor: 'rgba(56,189,248,0.14)',
+    borderRadius: 120,
+    transform: [{ rotate: '-3deg' }],
+  },
+  targetBottom: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  primaryDrinkBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  primaryDrinkText: { color: '#F8FAFC', fontSize: 18, fontWeight: '700' },
+
+  addSection: { marginBottom: 16 },
+  sectionLabel: { color: '#94A3B8', fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase' },
   glassRow: { flexDirection: 'row', gap: 8 },
   glassButton: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12,
-    paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: '#0F1B36',
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
   },
-  glassAmount: { color: '#38BDF8', fontSize: 14, fontWeight: '700' },
+  glassAmount: { color: '#38BDF8', fontSize: 15, fontWeight: '800' },
 
-  // Stats
   statsCard: {
-    flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 16,
-    padding: 18, marginBottom: 24, alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 26,
+    backgroundColor: '#0F1B36',
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.18)',
   },
-  statItem: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { color: '#F1F5F9', fontSize: 15, fontWeight: '700' },
-  statLabel: { color: '#475569', fontSize: 11, fontWeight: '500' },
-  statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.06)' },
+  statsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statsTitle: { color: '#E2E8F0', fontSize: 19, fontWeight: '800' },
+  statsRange: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
+  barChartRow: {
+    height: 130,
+    marginTop: 16,
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  barItem: {
+    width: 30,
+    height: '100%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(148,163,184,0.2)',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  barFill: {
+    width: '100%',
+    backgroundColor: '#38BDF8',
+    borderRadius: 10,
+  },
+  statsFooterRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  statsPill: {
+    backgroundColor: 'rgba(56,189,248,0.14)',
+    color: '#BAE6FD',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
 
-  // Tasks
-  tasksSection: { marginBottom: 20 },
+  tasksCard: {
+    borderRadius: 20,
+    backgroundColor: '#0F1B36',
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.16)',
+  },
+  tasksTitle: { color: '#E2E8F0', fontSize: 15, fontWeight: '700', marginBottom: 10 },
   taskRow: {
-    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, marginBottom: 8,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
   },
-  taskRowDone: { opacity: 0.5 },
+  taskRowDone: { opacity: 0.6 },
   taskIcon: {
-    width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center', justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(56,189,248,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  taskIconDone: { backgroundColor: '#34D399' },
+  taskIconDone: { backgroundColor: '#059669' },
   taskInfo: { flex: 1 },
-  taskName: { color: '#E2E8F0', fontSize: 14, fontWeight: '600' },
-  taskNameDone: { textDecorationLine: 'line-through', color: '#64748B' },
-  taskDesc: { color: '#475569', fontSize: 12, marginTop: 1 },
-  taskReward: { color: '#FBBF24', fontSize: 13, fontWeight: '700' },
-  taskRewardDone: { color: '#475569' },
+  taskName: { color: '#E2E8F0', fontSize: 13, fontWeight: '600' },
+  taskDesc: { color: '#94A3B8', fontSize: 11 },
+  taskReward: { color: '#FCD34D', fontSize: 12, fontWeight: '700' },
 
-  // Quote
   quoteCard: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#0F1B36',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.14)',
   },
-  quoteText: { color: '#64748B', fontSize: 14, fontStyle: 'italic', lineHeight: 20, flex: 1 },
+  quoteText: { color: '#CBD5E1', fontSize: 13, fontStyle: 'italic', flex: 1 },
 
-  // Reset
-  resetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12 },
-  resetText: { color: '#475569', fontSize: 13, fontWeight: '500' },
+  resetButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  resetText: { color: '#94A3B8', fontSize: 13, fontWeight: '600' },
 });

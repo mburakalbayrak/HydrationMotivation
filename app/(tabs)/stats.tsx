@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -19,15 +20,15 @@ export default function StatsScreen() {
 
   const loadStats = async () => {
     try {
-      const saved = await AsyncStorage.getItem('weeklyData');
+      const saved = await AsyncStorage.getItem(STORAGE_KEYS.WEEKLY_DATA);
       if (saved) setWeeklyData(JSON.parse(saved));
-      const goal = await AsyncStorage.getItem('dailyGoal');
+      const goal = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
       if (goal) setDailyGoal(parseInt(goal));
-      const s = await AsyncStorage.getItem('streak');
+      const s = await AsyncStorage.getItem(STORAGE_KEYS.STREAK);
       if (s) setStreak(parseInt(s));
-      const td = await AsyncStorage.getItem('totalDays');
+      const td = await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_DAYS);
       if (td) setTotalDays(parseInt(td));
-      const bd = await AsyncStorage.getItem('bestDay');
+      const bd = await AsyncStorage.getItem(STORAGE_KEYS.BEST_DAY);
       if (bd) setBestDay(parseInt(bd));
     } catch {
       /* ignore */
@@ -164,7 +165,7 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#15294A' },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 

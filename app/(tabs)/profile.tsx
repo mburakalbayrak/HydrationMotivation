@@ -1,15 +1,16 @@
+import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { BADGES, getLevel } from '../../constants/waterData';
 
@@ -37,21 +38,21 @@ export default function ProfileScreen() {
 
   const loadData = async () => {
     try {
-      const n = await AsyncStorage.getItem('userName');
+      const n = await AsyncStorage.getItem(STORAGE_KEYS.USER_NAME);
       if (n) { setUserName(n); setEditName(n); }
-      const w = await AsyncStorage.getItem('weight');
+      const w = await AsyncStorage.getItem(STORAGE_KEYS.WEIGHT);
       if (w) { setWeight(w); setEditWeight(w); }
-      const h = await AsyncStorage.getItem('height');
+      const h = await AsyncStorage.getItem(STORAGE_KEYS.HEIGHT);
       if (h) { setHeight(h); setEditHeight(h); }
-      const a = await AsyncStorage.getItem('activity');
+      const a = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVITY);
       if (a) setActivity(a);
-      const g = await AsyncStorage.getItem('dailyGoal');
+      const g = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
       if (g) setDailyGoal(parseInt(g));
-      const p = await AsyncStorage.getItem('points');
+      const p = await AsyncStorage.getItem(STORAGE_KEYS.POINTS);
       if (p) setPoints(parseInt(p));
-      const s = await AsyncStorage.getItem('streak');
+      const s = await AsyncStorage.getItem(STORAGE_KEYS.STREAK);
       if (s) setStreak(parseInt(s));
-      const td = await AsyncStorage.getItem('totalDays');
+      const td = await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_DAYS);
       if (td) setTotalDays(parseInt(td));
     } catch {
       /* ignore */
@@ -60,9 +61,9 @@ export default function ProfileScreen() {
 
   const saveProfile = async () => {
     try {
-      if (editName) { await AsyncStorage.setItem('userName', editName); setUserName(editName); }
-      if (editWeight) { await AsyncStorage.setItem('weight', editWeight); setWeight(editWeight); }
-      if (editHeight) { await AsyncStorage.setItem('height', editHeight); setHeight(editHeight); }
+      if (editName) { await AsyncStorage.setItem(STORAGE_KEYS.USER_NAME, editName); setUserName(editName); }
+      if (editWeight) { await AsyncStorage.setItem(STORAGE_KEYS.WEIGHT, editWeight); setWeight(editWeight); }
+      if (editHeight) { await AsyncStorage.setItem(STORAGE_KEYS.HEIGHT, editHeight); setHeight(editHeight); }
       setEditMode(false);
     } catch {
       /* ignore */
@@ -80,8 +81,15 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             const keysToRemove = [
-              'waterToday', 'weeklyData', 'streak', 'totalDays', 'bestDay',
-              'points', 'lastDrinkDate', 'completedTasks',
+              STORAGE_KEYS.WATER,
+              STORAGE_KEYS.WEEKLY_DATA,
+              STORAGE_KEYS.STREAK,
+              STORAGE_KEYS.TOTAL_DAYS,
+              STORAGE_KEYS.BEST_DAY,
+              STORAGE_KEYS.POINTS,
+              STORAGE_KEYS.PREV_DAY_WATER,
+              STORAGE_KEYS.COMPLETED_TASKS,
+              STORAGE_KEYS.DRINK_COUNT,
             ];
             await AsyncStorage.multiRemove(keysToRemove);
             setPoints(0); setStreak(0); setTotalDays(0);
@@ -279,7 +287,7 @@ const rowStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#15294A' },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 
