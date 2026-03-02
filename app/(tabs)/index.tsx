@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
 
   // Progress
   progressSection: { alignItems: 'center', marginVertical: 16 },
-  percentText: { color: '#F1F5F9', fontSize: 38, fontWeight: '800', letterSpacing: -2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  amountText: { color: '#E2E8F0', fontSize: 15, fontWeight: '600', marginTop: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  goalText: { color: '#94A3B8', fontSize: 13, marginTop: 1, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  percentText: { color: '#F1F5F9', fontSize: 38, fontWeight: '800', letterSpacing: -2 },
+  amountText: { color: '#E2E8F0', fontSize: 15, fontWeight: '600', marginTop: 2 },
+  goalText: { color: '#94A3B8', fontSize: 13, marginTop: 1 },
 
   // Status
   statusText: { color: '#64748B', fontSize: 14, textAlign: 'center', marginBottom: 24, fontWeight: '500' },
