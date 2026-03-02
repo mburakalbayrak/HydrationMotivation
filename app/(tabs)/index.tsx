@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import CircularProgress from '@/components/CircularProgress';
+import WaterBottle from '@/components/WaterBottle';
 import { DAILY_TASKS, GLASS_SIZES, getDailyQuote, getLevel } from '@/constants/waterData';
 
 export default function HomeScreen() {
@@ -131,22 +131,22 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Main Progress */}
+      {/* Main Bottle */}
       <View style={styles.progressSection}>
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <CircularProgress size={220} strokeWidth={14} progress={progress}>
+          <WaterBottle progress={progress} width={150}>
             <Text style={styles.percentText}>{percentage}%</Text>
             <Text style={styles.amountText}>{waterAmount} ml</Text>
             <Text style={styles.goalText}>/ {dailyGoal} ml</Text>
-          </CircularProgress>
+          </WaterBottle>
         </Animated.View>
       </View>
 
       {/* Status */}
       <Text style={styles.statusText}>
         {waterAmount >= dailyGoal
-          ? 'Hedef tamamlandı!'
-          : `${remaining} ml daha`}
+          ? 'Hedef tamamlandı! 🎉'
+          : `${remaining} ml daha içmelisin`}
       </Text>
 
       {/* Quick Add */}
@@ -254,10 +254,10 @@ const styles = StyleSheet.create({
   levelText: { color: '#38BDF8', fontSize: 13, fontWeight: '700' },
 
   // Progress
-  progressSection: { alignItems: 'center', marginVertical: 24 },
-  percentText: { color: '#F1F5F9', fontSize: 42, fontWeight: '800', letterSpacing: -2 },
-  amountText: { color: '#94A3B8', fontSize: 15, fontWeight: '600', marginTop: 2 },
-  goalText: { color: '#475569', fontSize: 13, marginTop: 1 },
+  progressSection: { alignItems: 'center', marginVertical: 16 },
+  percentText: { color: '#F1F5F9', fontSize: 38, fontWeight: '800', letterSpacing: -2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  amountText: { color: '#E2E8F0', fontSize: 15, fontWeight: '600', marginTop: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  goalText: { color: '#94A3B8', fontSize: 13, marginTop: 1, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
 
   // Status
   statusText: { color: '#64748B', fontSize: 14, textAlign: 'center', marginBottom: 24, fontWeight: '500' },
