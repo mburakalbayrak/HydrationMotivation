@@ -26,6 +26,7 @@ export default function HomeScreen() {
   const [drinkCount, setDrinkCount] = useState(0);
   const [weeklyData, setWeeklyData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [selectedBottleId, setSelectedBottleId] = useState('classic');
+  const [selectedAmount, setSelectedAmount] = useState(200);
   const [scaleAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
@@ -235,12 +236,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={19} color="#94A3B8" />
-        <Text style={styles.searchText}>Ara...</Text>
-      </View>
-
       {/* Daily Drink Target */}
       <View style={styles.targetCard}>
         <View style={styles.targetTop}>
@@ -270,9 +265,9 @@ export default function HomeScreen() {
           <Text style={styles.bottleName}>{selectedBottle.name}</Text>
         </Animated.View>
 
-        <TouchableOpacity style={styles.primaryDrinkBtn} onPress={() => addWater(200)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.primaryDrinkBtn} onPress={() => addWater(selectedAmount)} activeOpacity={0.85}>
           <Ionicons name="water" size={17} color="#F8FAFC" />
-          <Text style={styles.primaryDrinkText}>200 ml İç</Text>
+          <Text style={styles.primaryDrinkText}>{selectedAmount} ml İç</Text>
         </TouchableOpacity>
       </View>
 
@@ -280,16 +275,19 @@ export default function HomeScreen() {
       <View style={styles.addSection}>
         <Text style={styles.sectionLabel}>Hızlı Ekle</Text>
         <View style={styles.glassRow}>
-          {GLASS_SIZES.map((glass) => (
-            <TouchableOpacity
-              key={glass.amount}
-              style={styles.glassButton}
-              onPress={() => addWater(glass.amount)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.glassAmount}>+{glass.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {GLASS_SIZES.map((glass) => {
+            const isActive = glass.amount === selectedAmount;
+            return (
+              <TouchableOpacity
+                key={glass.amount}
+                style={[styles.glassButton, isActive && styles.glassButtonActive]}
+                onPress={() => setSelectedAmount(glass.amount)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.glassAmount, isActive && styles.glassAmountActive]}>+{glass.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -426,20 +424,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(148,163,184,0.18)',
   },
 
-  searchBar: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#0F1B36',
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.16)',
-  },
-  searchText: { color: '#94A3B8', fontSize: 17, fontWeight: '500' },
-
   weekCard: {
     borderRadius: 26,
     backgroundColor: '#0F1B36',
@@ -539,7 +523,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
   },
+  glassButtonActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#38BDF8',
+  },
   glassAmount: { color: '#38BDF8', fontSize: 15, fontWeight: '800' },
+  glassAmountActive: { color: '#F8FAFC' },
 
   statsCard: {
     borderRadius: 26,
