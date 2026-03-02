@@ -1,4 +1,5 @@
 import CircularProgress from '@/components/CircularProgress';
+import WaterBackground from '@/components/WaterBackground';
 import WaterBottle from '@/components/WaterBottle';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { BOTTLES, DAILY_TASKS, GLASS_SIZES, getDailyQuote, getLevel } from '@/constants/waterData';
@@ -214,7 +215,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <WaterBackground progress={progress} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.profileRow}>
@@ -391,12 +394,14 @@ export default function HomeScreen() {
       </TouchableOpacity>
 
       <View style={{ height: 20 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#15294A' },
+  container: { flex: 1, backgroundColor: '#1E3A5F' },
+  scrollView: { flex: 1 },
   content: { padding: 20, paddingTop: 56, paddingBottom: 26 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },

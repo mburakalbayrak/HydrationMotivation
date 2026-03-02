@@ -2,6 +2,7 @@ import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
+import WaterBackground from '@/components/WaterBackground';
 import {
     Alert,
     Pressable,
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const [userName, setUserName] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
+  const [waterAmount, setWaterAmount] = useState(0);
   const [activity, setActivity] = useState('');
   const [dailyGoal, setDailyGoal] = useState(2500);
   const [points, setPoints] = useState(0);
@@ -54,6 +56,8 @@ export default function ProfileScreen() {
       if (s) setStreak(parseInt(s));
       const td = await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_DAYS);
       if (td) setTotalDays(parseInt(td));
+      const waterRaw = await AsyncStorage.getItem(STORAGE_KEYS.WATER);
+      if (waterRaw) setWaterAmount(parseInt(waterRaw));
     } catch {
       /* ignore */
     }
@@ -115,8 +119,12 @@ export default function ProfileScreen() {
     sedentary: 'Hareketsiz', light: 'Hafif', moderate: 'Orta', active: 'Aktif',
   };
 
+  const progress = Math.min(waterAmount / Math.max(dailyGoal, 1), 1);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <WaterBackground progress={progress} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Profil</Text>
 
       {/* Avatar & Level */}
@@ -262,7 +270,8 @@ export default function ProfileScreen() {
 
       <Text style={styles.versionText}>HydrationMotivation v1.0</Text>
       <View style={{ height: 24 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -287,7 +296,8 @@ const rowStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#15294A' },
+  container: { flex: 1, backgroundColor: '#1E3A5F' },
+  scrollView: { flex: 1 },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 

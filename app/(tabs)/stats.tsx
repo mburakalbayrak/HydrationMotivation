@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import WaterBackground from '@/components/WaterBackground';
 import Svg, { Rect } from 'react-native-svg';
 
 const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
@@ -10,6 +11,7 @@ const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 export default function StatsScreen() {
   const [weeklyData, setWeeklyData] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [dailyGoal, setDailyGoal] = useState(2500);
+  const [waterAmount, setWaterAmount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
   const [bestDay, setBestDay] = useState(0);
@@ -24,6 +26,8 @@ export default function StatsScreen() {
       if (saved) setWeeklyData(JSON.parse(saved));
       const goal = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
       if (goal) setDailyGoal(parseInt(goal));
+      const w = await AsyncStorage.getItem(STORAGE_KEYS.WATER);
+      if (w) setWaterAmount(parseInt(w));
       const s = await AsyncStorage.getItem(STORAGE_KEYS.STREAK);
       if (s) setStreak(parseInt(s));
       const td = await AsyncStorage.getItem(STORAGE_KEYS.TOTAL_DAYS);
@@ -46,8 +50,12 @@ export default function StatsScreen() {
   const gap = 14;
   const chartWidth = DAYS.length * (barWidth + gap);
 
+  const progress = Math.min(waterAmount / Math.max(dailyGoal, 1), 1);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <WaterBackground progress={progress} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>İstatistikler</Text>
 
       {/* Streak */}
@@ -160,12 +168,14 @@ export default function StatsScreen() {
       </View>
 
       <View style={{ height: 24 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#15294A' },
+  container: { flex: 1, backgroundColor: '#1E3A5F' },
+  scrollView: { flex: 1 },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 

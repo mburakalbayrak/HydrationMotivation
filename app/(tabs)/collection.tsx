@@ -2,6 +2,7 @@ import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
+import WaterBackground from '@/components/WaterBackground';
 import {
     Alert,
     Pressable,
@@ -17,6 +18,8 @@ export default function CollectionScreen() {
   const [points, setPoints] = useState(0);
   const [unlockedBottles, setUnlockedBottles] = useState<string[]>(['classic']);
   const [selectedBottle, setSelectedBottle] = useState('classic');
+  const [waterAmount, setWaterAmount] = useState(0);
+  const [dailyGoal, setDailyGoal] = useState(2500);
 
   useEffect(() => {
     loadData();
@@ -49,6 +52,10 @@ export default function CollectionScreen() {
       if (ub) setUnlockedBottles(JSON.parse(ub));
       const sb = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_BOTTLE);
       if (sb) setSelectedBottle(sb);
+      const w = await AsyncStorage.getItem(STORAGE_KEYS.WATER);
+      if (w) setWaterAmount(parseInt(w));
+      const g = await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GOAL);
+      if (g) setDailyGoal(parseInt(g));
     } catch {
       /* ignore */
     }
@@ -83,8 +90,12 @@ export default function CollectionScreen() {
   const isUnlocked = (id: string) => unlockedBottles.includes(id);
   const isSelected = (id: string) => selectedBottle === id;
 
+  const progress = Math.min(waterAmount / Math.max(dailyGoal, 1), 1);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <WaterBackground progress={progress} />
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Koleksiyon</Text>
 
       {/* Points */}
@@ -184,12 +195,14 @@ export default function CollectionScreen() {
       </View>
 
       <View style={{ height: 24 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#15294A' },
+  container: { flex: 1, backgroundColor: '#1E3A5F' },
+  scrollView: { flex: 1 },
   content: { padding: 20, paddingTop: 60 },
   title: { color: '#F1F5F9', fontSize: 26, fontWeight: '700', marginBottom: 20, letterSpacing: -0.5 },
 
